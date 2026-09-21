@@ -1,0 +1,11 @@
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+.env*
+!.env.example
+.codex/
+.playwright-cli/
+output/
+doc/local/
+*.tsbuildinfo

@@ -1,0 +1,5 @@
+allowBuilds:
+  '@reown/appkit': false
+  protobufjs: false
+minimumReleaseAgeExclude:
+  - '@zkbytes/sdk@0.1.0'
