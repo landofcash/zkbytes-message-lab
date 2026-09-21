@@ -8,12 +8,12 @@ import {
   type ZkbytesReference,
 } from "@zkbytes/sdk";
 import { parseReceiveCard } from "./receive-card";
-import { sealReference, type SealedReference } from "./sealed-reference";
+import { sealSeed, type SealedSeed } from "./sealed-seed";
 
 export type Candidate = {
   item: StorageItem;
   reference: ZkbytesReference;
-  envelope: SealedReference;
+  envelope: SealedSeed;
 };
 export type UploadState =
   | "ready"
@@ -70,7 +70,7 @@ export async function prepareMessage(
   try {
     check();
     const reference = client.createReference(prepared.item);
-    const envelope = await sealReference(reference, recipient, client);
+    const envelope = await sealSeed(reference.seed, recipient);
     check();
     return { item: prepared.item, reference, envelope };
   } finally {

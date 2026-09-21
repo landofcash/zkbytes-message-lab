@@ -13,6 +13,24 @@ Review the prepared seed, creator and destination origins before **Confirm uploa
 An active upload enables sealed-link copy and envelope download. The recipient
 **Open** page is still pending, so save the link for the next phase.
 
+New links use `/open#<encrypted-seed>` (87 fragment characters) by default.
+Enable **Include recipient public key in link** to use
+`/open#<recipient-public-key>.<encrypted-seed>` (131 fragment characters).
+Both fields use canonical unpadded Base64URL (`A-Z`, `a-z`, `0-9`, `-`, `_`);
+`.` is an unambiguous separator. Switching formats does not sign, encrypt or upload
+again. Envelope download saves the selected fragment as `sealed-seed.txt`.
+
+SDK 0.1.3 encrypts the raw 16-byte seed directly with HPKE. No origins, expiration,
+creator descriptor or JSON are embedded. The recipient selects their receiving
+identity for links without a public key; the key is still cryptographically bound
+to the envelope. Including the public key can help identify the matching identity.
+No separate link storage is used. The codec also opens earlier Base32 v2 seeds.
+
+Recipient opening will use the app's configured storage origins. The downloaded
+object supplies expiration and its creator key: its signature can be checked, but
+the link no longer pins an expected creator. Sender identity remains unverified.
+The original full sender reference is still used for recovery and deletion.
+
 Pending or uncertain uploads stay on Send: use **Check upload status**. Only an
 authoritative not-found result enables retrying the exact encrypted message, without
 another signature. Export the sender reference before leaving the page; it contains
@@ -110,7 +128,7 @@ pnpm build
 
 Use `pnpm preview` to serve the production build. Configure deployed hosting to
 serve `index.html` for application routes, including `/open`. The URL fragment is
-reserved for future sealed references; the current shell does not process it.
+used for compact sealed seeds; the current Open placeholder does not process it.
 Real-wallet acceptance is manual; mocked provider tests cover signing requests,
 account changes, disconnects, stale results and provider errors. Storage acceptance
 remains for later phases.

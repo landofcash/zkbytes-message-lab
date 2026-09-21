@@ -13,7 +13,7 @@ import {
 } from "@/exchange/send";
 import { deriveIdentity } from "@/exchange/identity";
 import { createReceiveCard } from "@/exchange/receive-card";
-import { openSealedReference } from "@/exchange/sealed-reference";
+import { openSealedSeed, sealedSeedFragment } from "@/exchange/sealed-seed";
 
 async function fixture() {
   const sender = new Wallet("0x" + "0".repeat(63) + "1");
@@ -87,20 +87,18 @@ describe("message sending", () => {
       "masterSignature",
     ])
       expect(body).not.toContain(secret);
-    const ref = await openSealedReference(
-      JSON.stringify(candidate.envelope),
+    const seed = await openSealedSeed(
+      sealedSeedFragment(candidate.envelope),
       identity.privateKey,
-      client,
     );
-    expect(ref).toEqual(candidate.reference);
+    expect(seed).toEqual(candidate.reference.seed);
+    // Seed-only links do not pin a creator. Download validates the item's own
+    // signature; decryption does not establish the sender's identity.
+    fetch.mockResolvedValueOnce(response(candidate.item));
+    const item = await client.download(seed);
     expect(
-      (
-        await decryptStorageItem(
-          candidate.item,
-          ref.expectedCreator,
-          identity.privateKey,
-        )
-      ).plaintext,
+      (await decryptStorageItem(item, item.creator, identity.privateKey))
+        .plaintext,
     ).toBe("Confidential message 123");
     identity.privateKey.fill(0);
   });

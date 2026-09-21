@@ -9,7 +9,7 @@ import { useSession } from "@/wallet/session-store";
 import { walletErrorKind, walletErrorMessages } from "@/wallet/errors";
 import { ReceiveCardImport } from "./IdentityPanel";
 import type { ReceiveCard } from "./receive-card";
-import { sealedReferenceLink } from "./sealed-reference";
+import { sealedSeedFragment, sealedSeedLink } from "./sealed-seed";
 import {
   MAX_MESSAGE_BYTES,
   prepareMessage,
@@ -19,9 +19,11 @@ import {
   type UploadState,
 } from "./send";
 
-function download(name: string, value: unknown) {
+function download(name: string, value: unknown, plainText = false) {
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+    new Blob([plainText ? String(value) : JSON.stringify(value, null, 2)], {
+      type: plainText ? "text/plain" : "application/json",
+    }),
   );
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -54,6 +56,7 @@ export function SendPanel() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [includeRecipient, setIncludeRecipient] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
   const generation = useRef(0);
@@ -150,11 +153,16 @@ export function SendPanel() {
     setError("");
     setCopied(false);
     setConfirmClear(false);
+    setIncludeRecipient(false);
     setFormVersion((value) => value + 1);
   }
   const link =
     candidate && status === "active"
-      ? sealedReferenceLink(window.location.origin, candidate.envelope)
+      ? sealedSeedLink(
+          window.location.origin,
+          candidate.envelope,
+          includeRecipient,
+        )
       : "";
   return (
     <div className="stack">
@@ -167,7 +175,13 @@ export function SendPanel() {
       )}
       <Card>
         <div className="card-head">
-          <h2>{status === "active" ? "Message saved" : candidate ? "Review and upload" : "New message"}</h2>
+          <h2>
+            {status === "active"
+              ? "Message saved"
+              : candidate
+                ? "Review and upload"
+                : "New message"}
+          </h2>
         </div>
         <div className="card-body stack">
           {!client && <p role="status">{configuration.message}</p>}
@@ -226,12 +240,24 @@ export function SendPanel() {
             </>
           ) : (
             <>
-              <div role="status" className={status === "active" ? "upload-success" : undefined}>
-                {status === "active" && <CheckCircle2 aria-hidden="true" size={28} />}
+              <div
+                role="status"
+                className={status === "active" ? "upload-success" : undefined}
+              >
+                {status === "active" && (
+                  <CheckCircle2 aria-hidden="true" size={28} />
+                )}
                 <div>
-                  {status === "active" && <strong>Your encrypted message is saved.</strong>}
+                  {status === "active" && (
+                    <strong>Your encrypted message is saved.</strong>
+                  )}
                   <p>{messages[status]}</p>
-                  {status === "active" && <p>No need to upload again. Copy the sealed link below or download the envelope to keep it.</p>}
+                  {status === "active" && (
+                    <p>
+                      No need to upload again. Copy the sealed link below or
+                      download the envelope to keep it.
+                    </p>
+                  )}
                 </div>
               </div>
               <dl style={{ overflowWrap: "anywhere" }}>
@@ -270,8 +296,24 @@ export function SendPanel() {
                 )}
               {link && (
                 <>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={includeRecipient}
+                      onChange={(event) => {
+                        setIncludeRecipient(event.target.checked);
+                        setCopied(false);
+                      }}
+                    />{" "}
+                    Include recipient public key in link
+                  </label>
+                  <p className="small muted">
+                    {includeRecipient
+                      ? "Includes the public key to help identify the matching receiving identity."
+                      : "Shortest link. The recipient selects their receiving identity to open it."}
+                  </p>
                   <label htmlFor="sealed-link">Sealed link</label>
-                  <Textarea id="sealed-link" readOnly rows={5} value={link} />
+                  <Textarea id="sealed-link" readOnly rows={3} value={link} />
                   <Button
                     onClick={() => {
                       void navigator.clipboard.writeText(link).then(
@@ -287,7 +329,14 @@ export function SendPanel() {
                   </Button>
                   <Button
                     onClick={() =>
-                      download("sealed-envelope.json", candidate.envelope)
+                      download(
+                        "sealed-seed.txt",
+                        sealedSeedFragment(
+                          candidate.envelope,
+                          includeRecipient,
+                        ),
+                        true,
+                      )
                     }
                   >
                     Download sealed envelope
