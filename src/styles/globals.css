@@ -1,5 +1,301 @@
 @import "tailwindcss";
 
+.landing-shell {
+  display: block !important;
+}
+.landing-shell .topbar {
+  padding: 24px 5%;
+  gap: 32px;
+}
+.landing-shell .brand {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.landing-nav {
+  display: flex;
+  gap: 28px;
+  margin-right: auto;
+  font-weight: 600;
+}
+.landing-nav a:hover,
+.landing-footer a:hover {
+  color: var(--primary);
+}
+.landing-shell main {
+  max-width: 1600px;
+  padding: 0 5%;
+  margin: auto;
+}
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 660px;
+  padding: 48px 0;
+  gap: 20px;
+}
+.landing-copy {
+  position: relative;
+  z-index: 1;
+}
+.landing-kicker {
+  font:
+    10px/1.5 "JetBrains Mono",
+    monospace;
+  letter-spacing: 2px;
+  color: var(--primary);
+  margin-bottom: 25px;
+}
+.landing-kicker > span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  background: var(--primary);
+}
+.landing h1 {
+  font-size: clamp(68px, 7.8vw, 120px);
+  line-height: 0.94;
+  letter-spacing: -0.075em;
+}
+.landing h1 > span {
+  display: block;
+}
+.landing-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--foreground);
+}
+.landing-accent {
+  color: var(--primary);
+}
+.landing-description {
+  font-size: 18px;
+  line-height: 1.5;
+  margin: 28px 0;
+  color: var(--muted-foreground);
+}
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 20px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  border: 1px solid var(--primary);
+  transition: transform 0.2s;
+}
+.landing-cta:hover {
+  transform: translateY(-3px);
+}
+.landing-cta-secondary {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+.landing-art {
+  min-width: 0;
+  position: relative;
+}
+.sealed-art {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.art-index,
+.art-caption {
+  font:
+    9px/1.5 "JetBrains Mono",
+    monospace;
+  letter-spacing: 2px;
+  color: var(--muted-foreground);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.art-index {
+  padding: 0 8%;
+}
+.art-caption {
+  padding: 0 15%;
+}
+.vault-orbit {
+  transform-origin: 320px 320px;
+  animation: vault-orbit 90s linear infinite;
+}
+.vault-float {
+  animation: vault-float 7s ease-in-out infinite;
+}
+.vault-pulse {
+  animation: vault-pulse 4s ease-in-out infinite;
+}
+@keyframes vault-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes vault-float {
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes vault-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+.landing-process {
+  border-block: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 25px 0;
+  font-size: clamp(16px, 2.5vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.landing-process svg {
+  color: var(--primary);
+}
+.landing-receive {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 56px 0;
+}
+.landing-receive .landing-kicker {
+  margin-bottom: 10px;
+}
+.landing-receive h2 {
+  font-size: clamp(24px, 3vw, 40px);
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+}
+.landing-receive p:last-child {
+  color: var(--muted-foreground);
+  margin: 10px 0 0;
+}
+.landing-receive-link {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  font-size: 16px;
+  border-bottom: 1px solid var(--primary);
+  padding: 15px 0;
+  color: var(--primary);
+}
+.landing-footer {
+  padding: 25px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font:
+    10px/1.5 "JetBrains Mono",
+    monospace;
+}
+.landing-footer nav {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .landing-shell .topbar {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .landing-shell .topbar-controls {
+    margin-left: auto;
+  }
+  .landing-hero {
+    min-height: auto;
+    padding: 45px 0;
+  }
+  .landing h1 {
+    font-size: clamp(60px, 9vw, 85px);
+  }
+  .landing-cta {
+    padding: 14px;
+  }
+}
+@media (max-width: 650px) {
+  .landing-shell .topbar {
+    padding: 18px 5%;
+  }
+  .landing-shell .brand {
+    font-size: 22px;
+  }
+  .landing-nav {
+    margin-left: auto;
+    margin-right: 0;
+    gap: 22px;
+  }
+  .landing-shell .topbar-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .landing-shell main {
+    padding: 0 6%;
+  }
+  .landing-hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-top: 36px;
+  }
+  .landing h1 {
+    font-size: clamp(64px, 16vw, 100px);
+  }
+  .landing-description {
+    font-size: 16px;
+    margin: 24px 0;
+  }
+  .landing-actions {
+    flex-direction: column;
+  }
+  .landing-art {
+    width: 100%;
+    max-width: 440px;
+    margin: auto;
+  }
+  .landing-process {
+    gap: 8px;
+    font-size: 14px;
+  }
+  .landing-process svg {
+    width: 16px;
+  }
+  .landing-receive {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 38px 0;
+  }
+  .landing-footer nav {
+    gap: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vault-orbit,
+  .vault-float,
+  .vault-pulse {
+    animation: none;
+  }
+  .landing-cta {
+    transition: none;
+  }
+}
+
 @font-face {
   font-family: "Space Grotesk";
   font-style: normal;
@@ -312,6 +608,27 @@ label {
   gap: 7px;
   font-size: 11px;
   white-space: nowrap;
+}
+.wallet-modal {
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 20px;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.wallet-modal::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+.wallet-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 .dot {
   width: 6px;

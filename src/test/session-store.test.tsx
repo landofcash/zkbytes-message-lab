@@ -101,13 +101,12 @@ describe("wallet session lifecycle", () => {
     );
     const user = userEvent.setup();
     await user.click(screen.getByText("Connect"));
-    await user.click(screen.getByText("Check"));
     await user.click(screen.getByText("Restore"));
+    expect(mocks.check).not.toHaveBeenCalled();
     expect(screen.getByTestId("identities")).toHaveTextContent("public");
     act(() => emit("accountsChanged"));
     expect(privateKey.every((byte) => byte === 0)).toBe(true);
     expect(screen.getByTestId("identities")).toBeEmptyDOMElement();
-    await user.click(screen.getByText("Check"));
     let resolve!: (value: unknown) => void;
     mocks.derive.mockReturnValue(
       new Promise((done) => {

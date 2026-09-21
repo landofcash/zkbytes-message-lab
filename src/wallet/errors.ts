@@ -34,8 +34,7 @@ export const walletErrorMessages: Record<WalletErrorKind, string> = {
   configuration:
     "WalletConnect needs a valid Reown project ID. Configure it and restart the app.",
   cancelled: "Wallet connection cancelled. You can connect again when ready.",
-  network:
-    "Use Switch to Monad Testnet above, then run the signing check again.",
+  network: "Open Manage wallet, switch to Monad Testnet, then try again.",
   rejected: "Request declined in the wallet. You can try again when ready.",
   pending:
     "A wallet request is already open. Finish or dismiss it in your wallet, then try again.",

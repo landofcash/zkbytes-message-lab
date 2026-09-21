@@ -1,17 +1,37 @@
 # zkbytes Message Lab
 
-Receiving identities are available on **My keys** after the wallet compatibility
-check. Enter an exact label (for example `personal`) and choose **Create / restore
+The homepage at `/` introduces the app with custom animated SVG art and direct
+links to **Encrypt**, **Decrypt**, and receiving-key setup. It supports all three
+themes, mobile layouts and reduced-motion preferences.
+
+The two main areas are **Encrypt** and **Decrypt**. Use **Connect wallet** in the
+top bar to open wallet management; after connection it becomes **Manage wallet**.
+The modal includes connection choices, the selected account/network, network
+switching and disconnect. It yields to the wallet provider's own connection UI.
+
+Receiving identities are available under **Decrypt**. Enter an exact label
+(for example `personal`) and choose **Create / restore
 keys**. Approve one signature, then copy or export the public Receive card. The
 same wallet account and exact label restore the same key after reload. Labels are
 case-sensitive and are not passwords. Private keys remain in memory and are cleared
-by **Lock / clear keys**, wallet changes, disconnect or leaving the page.
+by **Lock / clear keys**, wallet changes, disconnect or leaving the app.
+Compatibility testing is optional under **Tools > Compatibility**. Neither key
+restoration nor Encrypt requires running it first; every signature is still
+validated. Reproducible wallet signatures remain necessary to restore the same keys.
 
-On **Send**, paste and import a recipient's Receive card to validate it and review
+On **Encrypt**, paste and import a recipient's Receive card to validate it and review
 the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
 Review the prepared seed, creator and destination origins before **Confirm upload**.
-An active upload enables sealed-link copy and envelope download. The recipient
-**Open** page is still pending, so save the link for the next phase.
+An active upload enables sealed-link copy and envelope download.
+
+On **Decrypt**, restore the matching receiving identity, paste a sealed link or
+the contents of an exported envelope, select the identity and click **Decrypt
+message**. Opening a URL prefills the fragment but never signs, downloads or
+decrypts automatically. The seed is decrypted before any storage request. The
+downloaded object is verified before plaintext is displayed. Both compact formats,
+earlier Base32 links and original full-reference envelopes are supported. Plaintext
+clears on Clear message, key lock, wallet/account/network changes and navigation
+away. Authentic expired content is labeled separately from verification failure.
 
 New links use `/open#<encrypted-seed>` (87 fragment characters) by default.
 Enable **Include recipient public key in link** to use
@@ -26,12 +46,12 @@ identity for links without a public key; the key is still cryptographically boun
 to the envelope. Including the public key can help identify the matching identity.
 No separate link storage is used. The codec also opens earlier Base32 v2 seeds.
 
-Recipient opening will use the app's configured storage origins. The downloaded
+Recipient opening uses the app's configured storage origins. The downloaded
 object supplies expiration and its creator key: its signature can be checked, but
 the link no longer pins an expected creator. Sender identity remains unverified.
 The original full sender reference is still used for recovery and deletion.
 
-Pending or uncertain uploads stay on Send: use **Check upload status**. Only an
+Pending or uncertain uploads stay on Encrypt: use **Check upload status**. Only an
 authoritative not-found result enables retrying the exact encrypted message, without
 another signature. Export the sender reference before leaving the page; it contains
 the storage location and is needed for later recovery/deletion. No reference is
@@ -39,12 +59,28 @@ saved automatically. The sender retains access and is the default deletion manag
 
 A browser app for encrypted message exchange using `@zkbytes/sdk`.
 
+On **Recover**, paste the exported sender reference JSON and choose **Check status**.
+No wallet or signature is required. An active result verifies the stored item against
+the reference; pending, deleted, expired and authoritative not-found are distinct.
+Only not-found offers a link to prepare a new message. A reference alone cannot
+recreate the original encrypted upload; failed checks remain uncertain.
+
+On **Delete**, paste the sender reference and connect the manager wallet. **Check
+deletion authority** verifies the item and requests one signature to derive its
+manager key. Review the seed, expiration, public key and exact manager index, then
+choose **Confirm deletion** or **Cancel**. Cancel sends no deletion request.
+Confirmation uses the SDK challenge/action flow and clears the derived keys.
+Navigation, key locking and wallet changes also clear prepared keys and invalidate
+late results. Status is checked automatically for up to ten attempts after submission;
+deletion itself is never automatically retried. The API confirms logical deletion,
+not physical removal: cached content may remain available for up to 60 seconds.
+
 The MVP includes the React shell, Terminal/Cyberpunk/Cosmic themes, configuration
 validation, MetaMask Connect, WalletConnect through Reown AppKit and a development
-fixture wallet. All integrations use the SDK's two-signature compatibility check.
+fixture wallet. All integrations support the SDK's optional two-signature compatibility check.
 Receiving identities, public cards, encrypted upload, sealed links and same-session
-upload recovery are implemented. Opening, imported-reference recovery and deletion
-remain unavailable. Live storage/CORS acceptance remains separate from local tests.
+upload recovery and recipient decryption are implemented. Standalone imported-reference
+recovery and manager deletion are implemented. Live storage/CORS acceptance remains separate from local tests.
 
 ## Run locally
 
@@ -66,14 +102,15 @@ for private messages. Its adapter and connection control are excluded from produ
 builds. Connection and signing are explicit button actions. Signatures and derived
 private keys are never persisted by the app. The app stores only the selected theme;
 MetaMask Connect and Reown may store their own connection/session metadata. Their analytics are
-disabled. The Send page contains a local draft field; navigation away or a wallet
+disabled. The Encrypt page contains a local draft field; navigation away or a wallet
 account change/disconnect clears it.
 
 ## Check MetaMask
 
-1. Open My keys and click MetaMask. Approve connection in your extension.
+1. Click Connect wallet in the top bar, then MetaMask. Approve connection in your extension.
 2. If shown, click Switch to Monad Testnet and approve adding/switching the network.
-   Then click Check compatibility and approve the two message signatures.
+   For the optional check, close the modal, open Tools > Compatibility, click Check
+   compatibility and approve the two message signatures.
 3. A reproducible, canonical EOA signer should show `Compatible · reproducible keys`.
 4. Change account, change network or disconnect; the previous result must clear.
 
@@ -104,9 +141,11 @@ tokens, and Lucide icons. All themes share the same copy and behavior.
    the exact app origin (for example `http://127.0.0.1:5173`).
 2. Set `VITE_REOWN_PROJECT_ID` in `.env.local` to its 32-character project ID and
    restart Vite. This is a browser-visible identifier, not a private key.
-3. Disconnect any active lab wallet, then click WalletConnect. Use the QR code or
+3. Open Connect wallet / Manage wallet in the top bar, disconnect any active lab
+   wallet, then click WalletConnect. Use the QR code or
    select your mobile wallet. Closing the modal cancels the local connection attempt.
-4. Run Check compatibility and approve both signatures on the connected wallet.
+4. Optionally close wallet management, open Tools > Compatibility, run Check
+   compatibility and approve both signatures. This is not required for key restoration.
 5. Verify account changes, remote disconnect and rejected requests clear/invalidate
    results safely. Test a non-MetaMask wallet as well as MetaMask Mobile.
 
@@ -128,7 +167,29 @@ pnpm build
 
 Use `pnpm preview` to serve the production build. Configure deployed hosting to
 serve `index.html` for application routes, including `/open`. The URL fragment is
-used for compact sealed seeds; the current Open placeholder does not process it.
+used for sealed links and is parsed locally only after an explicit Decrypt action.
 Real-wallet acceptance is manual; mocked provider tests cover signing requests,
 account changes, disconnects, stale results and provider errors. Storage acceptance
-remains for later phases.
+remains a separate live acceptance task. The latest local implementation checks
+passed 82 tests, lint, typecheck and build (2026-09-21). Browser fixture checks are
+not yet a committed, repeatable browser-test suite; no CI workflow exists in this checkout.
+
+## Acceptance status
+
+Reported success is partial acceptance, not a complete supported-wallet matrix.
+Exact browser/wallet versions still need to be recorded.
+
+| Integration | Recorded evidence | Still to verify |
+|---|---|---|
+| MetaMask Connect, desktop extension | Compatibility, account switching and disconnect reported working | Fresh-session exchange, recovery and deletion; record versions |
+| MetaMask Connect, mobile | Not recorded | Full connection/signing/exchange/deletion flow |
+| WalletConnect | Connection reported working; wallet not recorded | Identify wallet; rejection, remote disconnect and full exchange/deletion |
+| WalletConnect, MetaMask Mobile | Not separately recorded | Full flow |
+
+The user also reported receiving-identity testing and successful storage uploads.
+New recovery/deletion flows have automated coverage; their live acceptance and
+deletion/cache-expiry checks remain pending. Production deployment settings and
+the deployed commit were not rechecked during documentation cleanup.
+
+Remaining delivery work: safe diagnostic history/export, rate-limit countdowns,
+repeatable browser tests, CI, release verification and the live acceptance matrix.

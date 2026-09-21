@@ -10,7 +10,7 @@ import {
 } from "./receive-card";
 
 export function IdentityPanel() {
-  const { identities, restoreIdentity, lockIdentities, busy, compatibility } =
+  const { identities, restoreIdentity, lockIdentities, busy, session, error } =
     useSession();
   const [label, setLabel] = useState("personal");
   const [copyStatus, setCopyStatus] = useState("");
@@ -45,18 +45,20 @@ export function IdentityPanel() {
             underscores or hyphens. Start with a letter or number; no trailing
             spaces.
           </p>
-          <Button
-            type="submit"
-            disabled={busy || compatibility !== "compatible"}
-          >
+          <Button type="submit" disabled={busy || !session}>
             Create / restore keys
           </Button>
         </form>
-        {compatibility !== "compatible" && (
+        {!session && (
           <p className="small muted">
-            Connect a wallet and pass the compatibility check first.
+            Use Connect wallet at the top to create or restore receiving keys.
           </p>
         )}
+        <p className="small muted">
+          Compatibility testing is optional under Tools. Restoring the same keys
+          requires your wallet to return a reproducible signature.
+        </p>
+        {error && <p role="alert">{error}</p>}
         {identities.map((identity) => {
           const card = JSON.stringify(
             createReceiveCard(identity.publicKey),

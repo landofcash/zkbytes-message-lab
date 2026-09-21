@@ -25,6 +25,11 @@ type Compatibility =
   "untested" | "checking" | "compatible" | "nondeterministic" | WalletErrorKind;
 type SessionState = {
   sessionEpoch: number;
+  identityEpoch: number;
+  runIdentityOperation<T>(
+    publicKey: string,
+    operation: (privateKey: Uint8Array, isCurrent: () => boolean) => Promise<T>,
+  ): Promise<T>;
   runOperation<T>(
     operation: (
       session: LabWalletSession,
@@ -49,9 +54,11 @@ type SessionState = {
 const Context = createContext<SessionState | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [sessionEpoch, setSessionEpoch] = useState(0);
+  const [identityEpoch, setIdentityEpoch] = useState(0);
   const privateIdentities = useRef<ReceivingIdentity[]>([]);
   const [identities, setIdentities] = useState<SessionState["identities"]>([]);
   function clearPrivateIdentities() {
+    setIdentityEpoch((value) => value + 1);
     privateIdentities.current.forEach((identity) =>
       identity.privateKey.fill(0),
     );
@@ -131,8 +138,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setSession({ ...next });
           setNotice(
             event === "accountsChanged"
-              ? "Account changed. Check compatibility for the selected account."
-              : "Network changed. Run the compatibility check again when ready.",
+              ? "Account changed. Restore your receiving keys again when needed."
+              : "Network changed. Receiving keys have been cleared.",
           );
         }
         // Keep the prompt lock until the original request settles.
@@ -239,7 +246,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
   async function restoreIdentity(label: string) {
     const selected = current.current;
-    if (!selected || locked.current || compatibility !== "compatible") return;
+    if (!selected || locked.current) return;
     try {
       validateLabel(label);
     } catch (cause) {
@@ -269,6 +276,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         clearPrivateIdentities();
         setIdentities([]);
         setCompatibility("nondeterministic");
+        setError(
+          "This wallet returned different keys for the same label. The receiving keys were cleared. Check signing compatibility before sharing a new Receive card.",
+        );
         return;
       }
       existing?.privateKey.fill(0);
@@ -297,8 +307,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   ): Promise<T> {
     const selected = current.current;
     if (locked.current) throw new WalletError("pending");
-    if (!selected || compatibility !== "compatible")
-      throw new WalletError("disconnected");
+    if (!selected) throw new WalletError("disconnected");
     locked.current = true;
     setBusy(true);
     const id = revision.current;
@@ -313,10 +322,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (mounted.current) setBusy(false);
     }
   }
+  async function runIdentityOperation<T>(
+    publicKey: string,
+    operation: (privateKey: Uint8Array, isCurrent: () => boolean) => Promise<T>,
+  ): Promise<T> {
+    return runOperation(async (_session, isCurrent) => {
+      const identity = privateIdentities.current.find(
+        (value) => value.publicKey === publicKey,
+      );
+      if (!identity) throw new Error("Restore the receiving identity first.");
+      return operation(identity.privateKey, isCurrent);
+    });
+  }
   return (
     <Context.Provider
       value={{
         sessionEpoch,
+        identityEpoch,
+        runIdentityOperation,
         runOperation,
         identities,
         restoreIdentity,

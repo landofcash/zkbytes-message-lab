@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { HomePage } from "./HomePage";
 import { IdentityPanel } from "@/exchange/IdentityPanel";
 import { SendPanel } from "@/exchange/SendPanel";
-import { Link, NavLink, Route, Routes } from "react-router-dom";
+import { OpenPanel } from "@/exchange/OpenPanel";
+import { ManagementPanel } from "@/exchange/ManagementPanel";
+import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import {
   ArrowDownToLine,
   ArrowRight,
   ChevronRight,
-  FlaskConical,
   KeyRound,
   LockKeyhole,
   Radio,
@@ -15,23 +17,23 @@ import {
   ShieldCheck,
   Terminal,
   Trash2,
-  Unplug,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { configuration } from "@/config/env";
 import { walletNetwork } from "@/config/wallet";
-import { reownProjectId } from "@/config/reown";
+import { WalletModal } from "@/wallet/WalletModal";
+import { CompatibilityPanel } from "@/wallet/CompatibilityPanel";
 import { useSession } from "@/wallet/session-store";
 import { isTheme, setTheme, themes } from "./theme";
 
 const primary = [
-  { to: "/", label: "My keys", icon: KeyRound },
-  { to: "/send", label: "Send", icon: Send },
-  { to: "/open", label: "Open", icon: ArrowDownToLine },
+  { to: "/send", label: "Encrypt", icon: Send },
+  { to: "/open", label: "Decrypt", icon: ArrowDownToLine },
 ];
 const secondary = [
+  { to: "/compatibility", label: "Compatibility", icon: ShieldCheck },
   { to: "/recover", label: "Recover", icon: RotateCcw },
   { to: "/delete", label: "Delete", icon: Trash2 },
   { to: "/diagnostics", label: "Diagnostics", icon: Radio },
@@ -51,47 +53,71 @@ function Navigation({ items }: { items: typeof primary }) {
   ));
 }
 export function App() {
+  const home = useLocation().pathname === "/";
   const { session } = useSession();
+  const [walletOpen, setWalletOpen] = useState(false);
   const [theme, updateTheme] = useState(() => {
     const value = document.documentElement.dataset.theme;
     return isTheme(value) ? value : "terminal";
   });
   return (
-    <div className="shell">
-      <a className="skip-link" href="#main">
+    <div className={home ? "shell landing-shell" : "shell"}>
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main")?.focus();
+        }}
+      >
         Skip to content
       </a>
-      <aside className="sidebar">
-        <Link className="brand" to="/">
-          <span className="brand-mark">
-            <Terminal size={23} />
-          </span>
-          zkbytes<span className="brand-dot">.</span>
-        </Link>
-        <div className="brand-caption">MESSAGE LAB</div>
-        <nav aria-label="Main navigation">
-          <p className="nav-label">EXCHANGE</p>
-          <Navigation items={primary} />
-          <p className="nav-label tools-label">TOOLS</p>
-          <Navigation items={secondary} />
-        </nav>
-        <div className="sidebar-foot">
-          <LockKeyhole size={18} />
-          <p>
-            Private by design.
-            <br />
-            <span>Your keys stay with you.</span>
-          </p>
-          <div className="version">
-            MESSAGE LAB <span>v0.1</span>
+      {!home && (
+        <aside className="sidebar">
+          <Link className="brand" to="/">
+            <span className="brand-mark">
+              <Terminal size={23} />
+            </span>
+            zkbytes<span className="brand-dot">.</span>
+          </Link>
+          <div className="brand-caption">MESSAGE LAB</div>
+          <nav aria-label="Main navigation">
+            <p className="nav-label">EXCHANGE</p>
+            <Navigation items={primary} />
+            <p className="nav-label tools-label">TOOLS</p>
+            <Navigation items={secondary} />
+          </nav>
+          <div className="sidebar-foot">
+            <LockKeyhole size={18} />
+            <p>
+              Private by design.
+              <br />
+              <span>Your keys stay with you.</span>
+            </p>
+            <div className="version">
+              MESSAGE LAB <span>v0.1</span>
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
+      )}
       <div className="workspace">
         <header className="topbar">
-          <span className="breadcrumb">
-            zkbytes <span>/</span> Message Lab
-          </span>
+          {home ? (
+            <>
+              <Link className="brand" to="/" aria-label="zkbytes home">
+                <Terminal size={23} />
+                zkbytes<span className="brand-dot">.</span>
+              </Link>
+              <nav className="landing-nav" aria-label="Main navigation">
+                <Link to="/send">Encrypt</Link>
+                <Link to="/open">Decrypt</Link>
+              </nav>
+            </>
+          ) : (
+            <span className="breadcrumb">
+              zkbytes <span>/</span> Message Lab
+            </span>
+          )}
           <div className="topbar-controls">
             <label className="theme-control">
               Theme
@@ -113,27 +139,39 @@ export function App() {
                 ))}
               </select>
             </label>
-            <span className="connection-pill">
+            <Button
+              variant="outline"
+              className="connection-pill"
+              aria-haspopup="dialog"
+              onClick={() => setWalletOpen(true)}
+            >
+              <Wallet size={16} />
               <span className={session ? "dot connected" : "dot"} />
-              {session ? `${session.walletName} connected` : "Not connected"}
-            </span>
+              {session ? "Manage wallet" : "Connect wallet"}
+            </Button>
           </div>
         </header>
         <main id="main" tabIndex={-1}>
-          <div className="edition">
-            <span />
-            ENCRYPTED EXCHANGE{" "}
-            <span className="edition-end">MVP / LOCAL-FIRST</span>
-          </div>
+          {!home && (
+            <div className="edition">
+              <span />
+              ENCRYPTED EXCHANGE{" "}
+              <span className="edition-end">MVP / LOCAL-FIRST</span>
+            </div>
+          )}
           <Routes>
-            <Route path="/" element={<MyKeys />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/compatibility" element={<CompatibilityPage />} />
             <Route
               path="/send"
               element={<SendPage key={session?.address ?? "disconnected"} />}
             />
-            <Route path="/open" element={<ComingSoon kind="open" />} />
-            <Route path="/recover" element={<ComingSoon kind="recover" />} />
-            <Route path="/delete" element={<ComingSoon kind="delete" />} />
+            <Route path="/open" element={<DecryptPage />} />
+            <Route
+              path="/recover"
+              element={<ManagementPage mode="recover" />}
+            />
+            <Route path="/delete" element={<ManagementPage mode="delete" />} />
             <Route path="/diagnostics" element={<Diagnostics />} />
             <Route
               path="*"
@@ -141,19 +179,22 @@ export function App() {
                 <>
                   <h1>Page not found</h1>
                   <Button asChild>
-                    <Link to="/">Back to My keys</Link>
+                    <Link to="/">Back to home</Link>
                   </Button>
                 </>
               }
             />
           </Routes>
-          <footer className="page-footer">
-            <LockKeyhole size={13} />
-            <span>Explicit actions. Local keys. Encrypted content.</span>
-            <span className="footer-build">zkbytes / message lab</span>
-          </footer>
+          {!home && (
+            <footer className="page-footer">
+              <LockKeyhole size={13} />
+              <span>Explicit actions. Local keys. Encrypted content.</span>
+              <span className="footer-build">zkbytes / message lab</span>
+            </footer>
+          )}
         </main>
       </div>
+      <WalletModal open={walletOpen} onOpenChange={setWalletOpen} />
     </div>
   );
 }
@@ -221,238 +262,45 @@ function HowItWorks() {
           <li>
             <div>
               <strong>Open a sealed link</strong>
-              <p>
-                Unlock the reference, then download and decrypt the message.
-              </p>
+              <p>Unlock the seed, then download and decrypt the message.</p>
             </div>
           </li>
         </ol>
         <p className="small muted">
-          Receiving keys and message exchange arrive in the next phases.
+          Restore receiving keys under Decrypt; use Encrypt to send a message.
         </p>
       </div>
     </Card>
   );
 }
-function MyKeys() {
-  const {
-    session,
-    busy,
-    compatibility,
-    error,
-    notice,
-    connectMetaMask,
-    connectWalletConnect,
-    switchNetwork,
-    connectFixture,
-    disconnect,
-    testCompatibility,
-  } = useSession();
+function DecryptPage() {
+  const { sessionEpoch, identityEpoch } = useSession();
+  const location = useLocation();
   return (
     <>
       <Hero
-        eyebrow="01 / YOUR RECEIVING IDENTITY"
-        title="Your wallet."
-        accent="Your keys."
-        description="A private exchange starts with keys you control. Connect your wallet, check signing compatibility, then create your receiving identity."
+        eyebrow="02 / DECRYPT A MESSAGE"
+        title="A message for you."
+        accent="Unlocked by you."
+        description="Restore your receiving keys with your wallet and exact key label, then open a sealed link."
       />
       <div className="columns">
-        <div className="stack">
-          <Card>
-            <div className="card-head">
-              <h2>
-                <Wallet size={18} />
-                Wallet connection
-              </h2>
-              <span className="badge">STEP 01</span>
-            </div>
-            <div className="card-body">
-              <p className="section-intro">
-                Choose how to connect. Connection alone never requests a
-                signature.
-              </p>
-              <div className="wallet-options">
-                <button
-                  className="wallet-option"
-                  disabled={busy || !!session}
-                  onClick={() => void connectMetaMask()}
-                >
-                  <span className="wallet-icon">M</span>
-                  <span>
-                    <strong>MetaMask</strong>
-                    <small>Extension & mobile · Monad Testnet</small>
-                  </span>
-                  <span className="badge">
-                    {session?.kind === "metamask" ? "Connected" : "Connect"}
-                  </span>
-                </button>
-                <button
-                  className="wallet-option"
-                  disabled={busy || !!session || !reownProjectId}
-                  onClick={() => void connectWalletConnect()}
-                >
-                  <Wallet className="wallet-icon" size={22} />
-                  <span>
-                    <strong>WalletConnect</strong>
-                    <small>Connect with your wallet</small>
-                  </span>
-                  <span className="badge">
-                    {!reownProjectId
-                      ? "Setup needed"
-                      : session?.kind === "walletconnect"
-                        ? "Connected"
-                        : "Connect"}
-                  </span>
-                </button>
-              </div>
-              {!reownProjectId && (
-                <p className="small muted">
-                  WalletConnect needs a Reown project ID. Add
-                  VITE_REOWN_PROJECT_ID to .env.local and restart the app.
-                </p>
-              )}
-              {session && (
-                <div className="session-details">
-                  <div>
-                    <strong>{session.walletName}</strong>
-                    <p className="account-address">{session.address}</p>
-                    {session.chainId && (
-                      <p className="small muted">
-                        Network:{" "}
-                        {session.chainId === walletNetwork.chainId
-                          ? walletNetwork.name
-                          : session.chainId}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => void disconnect()}
-                  >
-                    <Unplug size={15} />
-                    Disconnect
-                  </Button>
-                </div>
-              )}
-              {session?.kind === "metamask" &&
-                session.chainId !== walletNetwork.chainId && (
-                  <div className="config-note">
-                    <p>
-                      Add or select Monad Testnet in MetaMask to run the signing
-                      check. No funds are needed.
-                    </p>
-                    <Button
-                      disabled={busy}
-                      onClick={() => void switchNetwork()}
-                    >
-                      Switch to Monad Testnet
-                    </Button>
-                  </div>
-                )}
-              {notice && (
-                <p className="config-note" role="status">
-                  {notice}
-                  {busy
-                    ? " Finish or dismiss the open wallet request before starting another."
-                    : ""}
-                </p>
-              )}
-              {error && (
-                <p role="alert" className="error-message">
-                  {error}
-                </p>
-              )}
-              {import.meta.env.DEV && !session && (
-                <div className="fixture-box">
-                  <div>
-                    <FlaskConical size={17} />
-                    <strong>Development fixture</strong>
-                  </div>
-                  <p>
-                    A public test identity for local checks. Never use it for
-                    private messages or funds. No wallet approvals appear in
-                    this mode.
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => void connectFixture()}
-                    disabled={busy}
-                  >
-                    <FlaskConical size={15} />
-                    Connect fixture
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-          <Card>
-            <div className="card-head">
-              <h2>
-                <ShieldCheck size={18} />
-                Signing compatibility
-              </h2>
-              <span className="badge">STEP 02</span>
-            </div>
-            <div className="card-body">
-              <p className="section-intro">
-                A receiving identity needs reproducible signatures. This check
-                signs the same message twice and compares the derived keys.
-              </p>
-              <div className="check-row">
-                <span
-                  className={
-                    compatibility === "compatible"
-                      ? "check-status success"
-                      : "check-status"
-                  }
-                  role="status"
-                >
-                  {compatibility === "untested"
-                    ? "Not checked"
-                    : compatibility === "checking"
-                      ? "Checking signatures…"
-                      : compatibility === "compatible"
-                        ? "Compatible · reproducible keys"
-                        : compatibility === "nondeterministic"
-                          ? "Incompatible · signatures differ"
-                          : "Check failed"}
-                </span>
-                <Button
-                  disabled={
-                    !session ||
-                    busy ||
-                    (session.kind === "metamask" &&
-                      session.chainId !== walletNetwork.chainId)
-                  }
-                  onClick={() => void testCompatibility()}
-                >
-                  Check compatibility
-                  <ArrowRight size={16} />
-                </Button>
-              </div>
-              <p className="small muted">
-                Your wallet will request two explicit signature approvals. No
-                transaction or upload occurs.
-              </p>
-            </div>
-          </Card>
-        </div>
-        <div className="stack">
-          <IdentityPanel />
-          <HowItWorks />
-          <Card className="quiet-card">
-            <div className="card-body">
-              <LockKeyhole size={20} />
-              <h2>Your wallet is the starting point</h2>
-              <p className="small muted">
-                A key label is a selector, not a password. Restoring keys
-                requires the same wallet account, label and signing profile.
-              </p>
-            </div>
-          </Card>
-        </div>
+        <IdentityPanel />
+        <OpenPanel key={`${sessionEpoch}:${identityEpoch}:${location.hash}`} />
       </div>
+    </>
+  );
+}
+function CompatibilityPage() {
+  return (
+    <>
+      <Hero
+        eyebrow="TOOLS / OPTIONAL CHECK"
+        title="Check your wallet."
+        accent="Know your signer."
+        description="Test reproducible signing when you need it. You can create and restore receiving keys without running this check."
+      />
+      <CompatibilityPanel />
     </>
   );
 }
@@ -461,10 +309,10 @@ function SendPage() {
   return (
     <>
       <Hero
-        eyebrow="02 / ENCRYPT A MESSAGE"
+        eyebrow="01 / ENCRYPT A MESSAGE"
         title="Write something."
         accent="Keep it private."
-        description="Encrypt text for a recipient and share a sealed link. Only the matching receiving key can open the reference."
+        description="Encrypt text for a recipient and share a sealed link. Only the matching receiving key can decrypt the seed."
       />
       <div className="columns">
         <SendPanel key={sessionEpoch} />
@@ -473,26 +321,13 @@ function SendPage() {
     </>
   );
 }
-const upcoming = {
-  open: {
-    eyebrow: "03 / OPEN A SEALED LINK",
-    title: "A message for you.",
-    accent: "Unlocked by you.",
-    description:
-      "Restore your receiving identity to open a sealed reference, then download and decrypt the message.",
-    heading: "Opening messages is coming later",
-    detail:
-      "Sealed links are not processed in this phase. No reference or object request is made.",
-  },
+const managementPages = {
   recover: {
     eyebrow: "TOOLS / UPLOAD RECOVERY",
     title: "An uncertain upload.",
     accent: "A careful next step.",
     description:
       "Use the original sender reference to recover the authoritative result before considering another upload.",
-    heading: "Upload recovery is coming later",
-    detail:
-      "An interrupted response does not mean an upload failed. Recovery will check the original item before offering another attempt.",
   },
   delete: {
     eyebrow: "TOOLS / MANAGE AN ITEM",
@@ -500,27 +335,18 @@ const upcoming = {
     accent: "Your decision.",
     description:
       "Delete an item using a wallet that derives one of its listed manager keys.",
-    heading: "Item deletion is coming later",
-    detail:
-      "Receiving a message does not grant deletion authority. Deletion will require an explicit manager confirmation.",
   },
 };
-function ComingSoon({ kind }: { kind: keyof typeof upcoming }) {
-  const content = upcoming[kind];
+function ManagementPage({ mode }: { mode: "recover" | "delete" }) {
+  const { sessionEpoch, identityEpoch } = useSession();
+  const content = managementPages[mode];
   return (
     <>
       <Hero {...content} />
-      <Card className="empty-state">
-        <LockKeyhole size={30} strokeWidth={1.3} />
-        <h2>{content.heading}</h2>
-        <p>{content.detail}</p>
-        <Button asChild variant="outline">
-          <Link to="/">
-            Go to My keys
-            <ArrowRight size={16} />
-          </Link>
-        </Button>
-      </Card>
+      <ManagementPanel
+        key={`${mode}:${sessionEpoch}:${identityEpoch}`}
+        mode={mode}
+      />
     </>
   );
 }
@@ -574,8 +400,8 @@ function Diagnostics() {
                 ? "Configured · not tested"
                 : "Not configured"}
             </dd>
-            <dt>Network activity</dt>
-            <dd>No storage requests in this phase</dd>
+            <dt>Storage requests</dt>
+            <dd>Started only by your explicit actions</dd>
           </dl>
           {configuration.message && (
             <p className="config-note" role="status">

@@ -46,7 +46,7 @@ const messages: Record<UploadState, string> = {
   expired: "This item has expired. A sealed link is unavailable.",
 };
 export function SendPanel() {
-  const { session, busy, compatibility, runOperation } = useSession();
+  const { session, busy, runOperation } = useSession();
   const client = configuration.client;
   const [message, setMessage] = useState("");
   const [recipient, setRecipient] = useState<ReceiveCard | null>(null);
@@ -79,9 +79,7 @@ export function SendPanel() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [candidate]);
   const disabled = working || busy;
-  const canOperate = Boolean(
-    client && session && compatibility === "compatible" && !disabled,
-  );
+  const canOperate = Boolean(client && session && !disabled);
   async function operate(action: "prepare" | "upload" | "recover") {
     if (!client || operationLock.current || !canOperate) return;
     if (action === "prepare" && (candidate || !recipient)) return;
@@ -185,10 +183,9 @@ export function SendPanel() {
         </div>
         <div className="card-body stack">
           {!client && <p role="status">{configuration.message}</p>}
-          {compatibility !== "compatible" && (
+          {!session && (
             <p className="small muted">
-              Connect a wallet and check compatibility on My keys before
-              sending.
+              Use Connect wallet at the top before encrypting your message.
             </p>
           )}
           {!candidate ? (
@@ -342,8 +339,8 @@ export function SendPanel() {
                     Download sealed envelope
                   </Button>
                   <p className="small muted">
-                    The Open page is the next implementation phase; this link
-                    can be saved now.
+                    Share this link with the recipient. They can restore their
+                    receiving keys under Decrypt to open it.
                   </p>
                 </>
               )}

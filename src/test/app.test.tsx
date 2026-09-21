@@ -20,15 +20,15 @@ function renderApp(path = "/") {
 describe("MVP shell", () => {
   it("restores and exchanges a public Receive card, preserves keys across navigation, and locks them", async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderApp("/open");
+    await user.click(screen.getByRole("button", { name: "Connect wallet" }));
     await user.click(screen.getByRole("button", { name: /Connect fixture/ }));
     await user.click(
-      screen.getByRole("button", { name: /Check compatibility/ }),
+      await screen.findByRole("button", { name: "Close wallet management" }),
     );
     const restore = screen.getByRole("button", {
       name: "Create / restore keys",
     });
-    await screen.findByText(/Compatible.*reproducible keys/);
     await user.click(restore);
     const card = (
       (await screen.findByLabelText(
@@ -36,14 +36,14 @@ describe("MVP shell", () => {
       )) as HTMLTextAreaElement
     ).value;
     expect(card).not.toContain("privateKey");
-    await user.click(screen.getByRole("link", { name: "Send" }));
+    await user.click(screen.getByRole("link", { name: "Encrypt" }));
     await user.click(screen.getByLabelText("Paste a Receive card"));
     await user.paste(card);
     await user.click(
       screen.getByRole("button", { name: "Import Receive card" }),
     );
     expect(screen.getByText(/Receive card valid/)).toBeInTheDocument();
-    await user.click(screen.getByRole("link", { name: "My keys" }));
+    await user.click(screen.getByRole("link", { name: "Decrypt" }));
     expect(screen.getByLabelText("Receive card for personal")).toHaveValue(
       card,
     );
@@ -57,7 +57,11 @@ describe("MVP shell", () => {
     expect(
       await screen.findByLabelText("Receive card for personal"),
     ).toHaveValue(card);
+    await user.click(screen.getByRole("button", { name: "Manage wallet" }));
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
+    await user.click(
+      screen.getByRole("button", { name: "Close wallet management" }),
+    );
     expect(
       screen.queryByLabelText("Receive card for personal"),
     ).not.toBeInTheDocument();
@@ -80,19 +84,32 @@ describe("MVP shell", () => {
     const user = userEvent.setup();
     renderApp("/send");
     await user.type(screen.getByLabelText("Message"), "Clear on navigation");
-    await user.click(screen.getByRole("link", { name: "My keys" }));
-    await user.click(screen.getByRole("link", { name: "Send" }));
+    await user.click(screen.getByRole("link", { name: "Decrypt" }));
+    await user.click(screen.getByRole("link", { name: "Encrypt" }));
     expect(screen.getByLabelText("Message")).toHaveValue("");
   });
-  it("does not connect or sign on mount and leaves future actions disabled", () => {
+  it("keeps wallet actions in a modal and compatibility in a separate optional tool", async () => {
+    const user = userEvent.setup();
     renderApp();
-    expect(screen.getByText("Not connected")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Check compatibility/ }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: /Check compatibility/ }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Connect wallet" }));
+    expect(
+      screen.getByRole("dialog", { name: "Connect wallet" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /MetaMask/ })).toBeEnabled();
     expect(
       screen.getByRole("button", { name: /WalletConnect/ }),
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole("button", { name: "Close wallet management" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Compatibility" }));
+    expect(
+      screen.getByRole("button", { name: /Check compatibility/ }),
     ).toBeDisabled();
   });
   it("switches themes when browser storage is unavailable", () => {
