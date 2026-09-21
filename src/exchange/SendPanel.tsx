@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { canonicalTimestamp } from "@zkbytes/sdk";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
@@ -166,7 +167,7 @@ export function SendPanel() {
       )}
       <Card>
         <div className="card-head">
-          <h2>{candidate ? "Review and upload" : "New message"}</h2>
+          <h2>{status === "active" ? "Message saved" : candidate ? "Review and upload" : "New message"}</h2>
         </div>
         <div className="card-body stack">
           {!client && <p role="status">{configuration.message}</p>}
@@ -225,7 +226,14 @@ export function SendPanel() {
             </>
           ) : (
             <>
-              <p role="status">{messages[status]}</p>
+              <div role="status" className={status === "active" ? "upload-success" : undefined}>
+                {status === "active" && <CheckCircle2 aria-hidden="true" size={28} />}
+                <div>
+                  {status === "active" && <strong>Your encrypted message is saved.</strong>}
+                  <p>{messages[status]}</p>
+                  {status === "active" && <p>No need to upload again. Copy the sealed link below or download the envelope to keep it.</p>}
+                </div>
+              </div>
               <dl style={{ overflowWrap: "anywhere" }}>
                 <dt>Recipient public key</dt>
                 <dd>{candidate.envelope.recipientPublicKey}</dd>

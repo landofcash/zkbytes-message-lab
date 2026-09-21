@@ -71,7 +71,7 @@ describe("message sending", () => {
           seed: candidate.item.seed,
           downloadUrl: client.downloadUrl(candidate.item.seed),
           itemSignature: candidate.item.itemSignature,
-          createdAt: "2030-01-01T00:00:00Z",
+          createdAt: "2026-09-21T12:37:03.075Z",
           expiresAt: candidate.item.expiresAt,
         },
         201,
@@ -116,7 +116,7 @@ describe("message sending", () => {
       response({
         seed: candidate.item.seed,
         state: "active",
-        createdAt: "2030-01-01T00:00:00Z",
+        createdAt: "2026-09-21T12:37:03.075Z",
         expiresAt: candidate.item.expiresAt,
       }),
     );

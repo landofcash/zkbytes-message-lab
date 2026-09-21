@@ -87,6 +87,8 @@ describe("Send UI", () => {
     expect(mocks.upload).toHaveBeenCalledOnce();
     expect(screen.queryByLabelText("Sealed link")).not.toBeInTheDocument();
     await act(async () => resolve("active"));
+    expect(screen.getByRole("heading", { name: "Message saved" })).toBeInTheDocument();
+    expect(screen.getByText("Your encrypted message is saved.")).toBeInTheDocument();
     expect(screen.getByLabelText("Sealed link")).toHaveValue(
       "https://app.example.com/open#ciphertext",
     );
@@ -123,6 +125,23 @@ describe("Send UI", () => {
     expect(mocks.upload.mock.calls[0][1]).toBe(mocks.upload.mock.calls[1][1]);
     expect(mocks.prepare).toHaveBeenCalledOnce();
   });
+  it("replaces a recovery error with clear success and sharing controls after verification", async () => {
+    mocks.upload.mockResolvedValue("uncertain");
+    mocks.recover.mockRejectedValueOnce(new Error("invalid response"));
+    mocks.recover.mockResolvedValueOnce("active");
+    render(<SendPanel />);
+    const user = await fill();
+    await user.click(screen.getByRole("button", { name: "Confirm & sign to encrypt" }));
+    await user.click(screen.getByRole("button", { name: "Confirm upload" }));
+    await user.click(screen.getByRole("button", { name: "Check upload status" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Status could not be verified");
+    await user.click(screen.getByRole("button", { name: "Check upload status" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Message saved" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy sealed link" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm upload" })).not.toBeInTheDocument();
+  });
+
   it("invalidates late preparation on navigation and does not upload", async () => {
     let resolve!: (value: unknown) => void;
     mocks.prepare.mockReturnValue(

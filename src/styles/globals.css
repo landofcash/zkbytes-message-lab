@@ -612,6 +612,25 @@ h1 span {
 .success {
   color: var(--primary);
 }
+.upload-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+.upload-success > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.upload-success strong {
+  font-size: 1.1rem;
+}
+.upload-success p {
+  margin: 8px 0 0;
+}
 .small {
   font-size: 12px;
 }
