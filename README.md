@@ -20,7 +20,7 @@ Both fields use canonical unpadded Base64URL (`A-Z`, `a-z`, `0-9`, `-`, `_`);
 `.` is an unambiguous separator. Switching formats does not sign, encrypt or upload
 again. Envelope download saves the selected fragment as `sealed-seed.txt`.
 
-SDK 0.1.3 encrypts the raw 16-byte seed directly with HPKE. No origins, expiration,
+SDK 0.1.4 encrypts the raw 16-byte seed directly with HPKE. No origins, expiration,
 creator descriptor or JSON are embedded. The recipient selects their receiving
 identity for links without a public key; the key is still cryptographically bound
 to the envelope. Including the public key can help identify the matching identity.

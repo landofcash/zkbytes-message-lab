@@ -21,8 +21,8 @@ importers:
         specifier: 1.8.24
         version: 1.8.24(@ethersproject/sha2@5.8.0)(@types/react@19.3.0)(debug@4.4.3)(ethers@6.17.0)(react@19.3.0)(typescript@5.9.3)(zod@3.25.76)
       '@zkbytes/sdk':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.1.4
+        version: 0.1.4
       clsx:
         specifier: 2.1.1
         version: 2.1.1
@@ -1365,8 +1365,8 @@ packages:
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
 
-  '@zkbytes/sdk@0.1.2':
-    resolution: {integrity: sha512-OQe25LY7HhZ/TnFKq5pjul8HGZexBo542od6qDe8wH1MfySlTh7SR1/wweBI/FyfXBo7NWVfUmRbHaMaSf0NSA==}
+  '@zkbytes/sdk@0.1.4':
+    resolution: {integrity: sha512-+q5syXh7JubIWr4Bn+2UvHy5Cg/Wu/9E9AXnORdC2mFHyLRtOD7CUZqludsZkdGua5wh3mA6yKyB97phVvEMuw==}
     engines: {node: '>=22'}
 
   abitype@1.0.6:
@@ -4879,7 +4879,7 @@ snapshots:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
 
-  '@zkbytes/sdk@0.1.2':
+  '@zkbytes/sdk@0.1.4':
     dependencies:
       '@hpke/core': 1.9.0
       '@noble/curves': 2.4.0
