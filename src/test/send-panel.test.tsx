@@ -38,13 +38,7 @@ vi.mock("@/exchange/sealed-seed", () => ({
   sealedSeedFragment: () => "recipient-ciphertext",
 }));
 const publicKey = "E/frDPU+6KR8X6eFQ95jCOwDiIH1CCwoRmNqz+IxoyI=";
-const card = JSON.stringify({
-  format: "zkbytes-receive-card",
-  version: 1,
-  profile: "zkbytes-message-lab-receiving-v1",
-  algorithm: "X25519",
-  publicKey,
-});
+const card = "zkbytes.v1.E_frDPU-6KR8X6eFQ95jCOwDiIH1CCwoRmNqz-IxoyI";
 const candidate = {
   item: {},
   envelope: { recipientPublicKey: publicKey },

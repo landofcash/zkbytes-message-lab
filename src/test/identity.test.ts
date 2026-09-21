@@ -13,7 +13,11 @@ import {
   identityMessage,
   validateLabel,
 } from "@/exchange/identity";
-import { createReceiveCard, parseReceiveCard } from "@/exchange/receive-card";
+import {
+  createReceiveCard,
+  parseReceiveCard,
+  serializeReceiveCard,
+} from "@/exchange/receive-card";
 import type { LabWalletSession } from "@/wallet/types";
 const wallet = new Wallet("0x" + "0".repeat(63) + "1");
 const session: LabWalletSession = {
@@ -105,14 +109,15 @@ describe("receiving identity v1", () => {
   it("exchanges only a validated public key and rejects unsupported or ambiguous cards", async () => {
     const identity = await deriveIdentity(session, "personal", () => true);
     const card = createReceiveCard(identity.publicKey);
-    const text = JSON.stringify(card);
+    const text = serializeReceiveCard(card);
     expect(parseReceiveCard(text)).toEqual(card);
     expect(text).not.toContain("personal");
     for (const invalid of [
       JSON.stringify({ ...card, label: "secret" }),
       JSON.stringify({ ...card, version: 2 }),
       JSON.stringify({ ...card, publicKey: "A".repeat(43) + "=" }),
-      text.replace('"version":1', '"version":1,"version":1'),
+      text.replace(".v1.", ".v2."),
+      text + ".extra",
       " ".repeat(2049),
     ])
       expect(() => parseReceiveCard(invalid)).toThrow();

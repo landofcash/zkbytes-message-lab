@@ -10,6 +10,7 @@ import {
 import {
   createReceiveCard,
   parseReceiveCard,
+  serializeReceiveCard,
   type ReceiveCard,
 } from "./receive-card";
 import { openSealedSeed as openLegacySeed } from "./sealed-seed-v2";
@@ -86,7 +87,7 @@ export async function sealSeed(
   seed: string,
   recipient: ReceiveCard,
 ): Promise<SealedSeed> {
-  const card = parseReceiveCard(JSON.stringify(recipient));
+  const card = parseReceiveCard(serializeReceiveCard(recipient));
   return {
     recipientPublicKey: card.publicKey,
     encryptedSeed: base64url(await encryptSeed(seed, card.publicKey)),

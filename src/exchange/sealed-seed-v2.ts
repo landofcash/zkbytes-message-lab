@@ -15,6 +15,7 @@ import {
 import {
   createReceiveCard,
   parseReceiveCard,
+  serializeReceiveCard,
   type ReceiveCard,
 } from "./receive-card";
 
@@ -87,7 +88,7 @@ export async function sealSeed(
   recipient: ReceiveCard,
 ): Promise<SealedSeed> {
   decodeSeed(seed);
-  const card = parseReceiveCard(JSON.stringify(recipient));
+  const card = parseReceiveCard(serializeReceiveCard(recipient));
   const context = randomBytes(BYTE_LENGTHS.seed);
   const aesKey = randomBytes(BYTE_LENGTHS.aesKey);
   try {

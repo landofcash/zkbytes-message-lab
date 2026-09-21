@@ -7,7 +7,10 @@ import {
   encodeBase64,
   x25519PublicKeyFromPrivate,
 } from "@zkbytes/sdk";
-import { createReceiveCard } from "@/exchange/receive-card";
+import {
+  createReceiveCard,
+  serializeReceiveCard,
+} from "@/exchange/receive-card";
 import { prepareMessage } from "@/exchange/send";
 import { sealedSeedLink } from "@/exchange/sealed-seed";
 import { openMessage } from "@/exchange/open";
@@ -27,7 +30,7 @@ async function fixture() {
   const candidate = await prepareMessage(
     client,
     "Message for another recipient",
-    JSON.stringify(card),
+    serializeReceiveCard(card),
     "2035-01-01T00:00:00Z",
     sender,
     () => true,

@@ -12,7 +12,10 @@ import {
   uploadCandidate,
 } from "@/exchange/send";
 import { deriveIdentity } from "@/exchange/identity";
-import { createReceiveCard } from "@/exchange/receive-card";
+import {
+  createReceiveCard,
+  serializeReceiveCard,
+} from "@/exchange/receive-card";
 import { openSealedSeed, sealedSeedFragment } from "@/exchange/sealed-seed";
 
 async function fixture() {
@@ -43,7 +46,7 @@ async function fixture() {
   const candidate = await prepareMessage(
     client,
     "Confidential message 123",
-    JSON.stringify(createReceiveCard(identity.publicKey)),
+    serializeReceiveCard(createReceiveCard(identity.publicKey)),
     "2035-01-01T00:00:00Z",
     signer,
     () => true,
@@ -149,7 +152,7 @@ describe("message sending", () => {
       prepareMessage(
         client,
         "Draft",
-        JSON.stringify(createReceiveCard(identity.publicKey)),
+        serializeReceiveCard(createReceiveCard(identity.publicKey)),
         candidate.reference.expiresAt,
         { address: signer.address, signMessage },
         () => current,

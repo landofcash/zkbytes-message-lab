@@ -11,13 +11,23 @@ switching and disconnect. It yields to the wallet provider's own connection UI.
 
 Receiving identities are available under **Decrypt**. Enter an exact label
 (for example `personal`) and choose **Create / restore
-keys**. Approve one signature, then copy or export the public Receive card. The
+keys**. Approve one signature, then copy or export the compact public Receive card:
+`zkbytes.v1.<publicKey>`. Export saves `receive-card.txt`; only compact cards are
+accepted. The
 same wallet account and exact label restore the same key after reload. Labels are
 case-sensitive and are not passwords. Private keys remain in memory and are cleared
 by **Lock / clear keys**, wallet changes, disconnect or leaving the app.
 Compatibility testing is optional under **Tools > Compatibility**. Neither key
 restoration nor Encrypt requires running it first; every signature is still
 validated. Reproducible wallet signatures remain necessary to restore the same keys.
+
+**Sign Receive card** optionally adds a wallet endorsement through a separate
+approval: `zkbytes.v1.<publicKey>.<walletAddress>.<signature>`. The key and public
+endorsement signature use unpadded Base64URL; v1 defines X25519. Signing makes the
+wallet address public. Imports verify the signature and show the endorsing wallet,
+or reject invalid cards. This proves wallet endorsement, not private-key possession,
+a person's identity or the sender of subsequent messages. **Use unsigned card**
+returns to the shorter form. Secret key-derivation signatures are never exported.
 
 On **Encrypt**, paste and import a recipient's Receive card to validate it and review
 the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
@@ -171,7 +181,7 @@ used for sealed links and is parsed locally only after an explicit Decrypt actio
 Real-wallet acceptance is manual; mocked provider tests cover signing requests,
 account changes, disconnects, stale results and provider errors. Storage acceptance
 remains a separate live acceptance task. The latest local implementation checks
-passed 82 tests, lint, typecheck and build (2026-09-21). Browser fixture checks are
+passed 86 tests, lint, typecheck and build (2026-09-21). Browser fixture checks are
 not yet a committed, repeatable browser-test suite; no CI workflow exists in this checkout.
 
 ## Acceptance status

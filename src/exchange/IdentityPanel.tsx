@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -6,12 +6,22 @@ import { useSession } from "@/wallet/session-store";
 import {
   createReceiveCard,
   parseReceiveCard,
+  serializeReceiveCard,
+  signReceiveCard,
   type ReceiveCard,
 } from "./receive-card";
 
 export function IdentityPanel() {
-  const { identities, restoreIdentity, lockIdentities, busy, session, error } =
-    useSession();
+  const {
+    identities,
+    restoreIdentity,
+    lockIdentities,
+    busy,
+    session,
+    error,
+    sessionEpoch,
+    identityEpoch,
+  } = useSession();
   const [label, setLabel] = useState("personal");
   const [copyStatus, setCopyStatus] = useState("");
   return (
@@ -59,60 +69,12 @@ export function IdentityPanel() {
           requires your wallet to return a reproducible signature.
         </p>
         {error && <p role="alert">{error}</p>}
-        {identities.map((identity) => {
-          const card = JSON.stringify(
-            createReceiveCard(identity.publicKey),
-            null,
-            2,
-          );
-          return (
-            <section key={identity.label} className="stack">
-              <h3>{identity.label}</h3>
-              <p className="small muted">
-                Public encryption key · not proof of a person's identity
-              </p>
-              <code style={{ overflowWrap: "anywhere" }}>
-                {identity.publicKey}
-              </code>
-              <label htmlFor={`card-${identity.label}`}>
-                Receive card for {identity.label}
-              </label>
-              <Textarea
-                id={`card-${identity.label}`}
-                value={card}
-                readOnly
-                rows={8}
-              />
-              <Button
-                onClick={() => {
-                  void navigator.clipboard.writeText(card).then(
-                    () => setCopyStatus("Receive card copied."),
-                    () =>
-                      setCopyStatus(
-                        "Copy unavailable. Select and copy the Receive card above.",
-                      ),
-                  );
-                }}
-              >
-                Copy Receive card
-              </Button>
-              <Button
-                onClick={() => {
-                  const url = URL.createObjectURL(
-                    new Blob([card], { type: "application/json" }),
-                  );
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = "receive-card.json";
-                  link.click();
-                  setTimeout(() => URL.revokeObjectURL(url), 1000);
-                }}
-              >
-                Export Receive card
-              </Button>
-            </section>
-          );
-        })}
+        {identities.map((identity) => (
+          <ReceiveCardDisplay
+            key={`${sessionEpoch}:${identityEpoch}:${identity.publicKey}`}
+            identity={identity}
+          />
+        ))}
         {identities.length > 0 && (
           <Button
             onClick={() => {
@@ -151,7 +113,8 @@ export function ReceiveCardImport({
           disabled={disabled}
           value={text}
           maxLength={2048}
-          rows={8}
+          rows={4}
+          placeholder="zkbytes.v1.…"
           onChange={(event) => {
             setText(event.target.value);
             setCard(null);
@@ -171,7 +134,7 @@ export function ReceiveCardImport({
               setCard(null);
               onChange?.(null);
               setError(
-                "Invalid or unsupported Receive card. Ask the recipient for a fresh export.",
+                "Invalid Receive card or wallet signature. Ask the recipient for a fresh export.",
               );
             }
           }}
@@ -186,11 +149,141 @@ export function ReceiveCardImport({
             </p>
             <code style={{ overflowWrap: "anywhere" }}>{card.publicKey}</code>
             <p className="small muted">
-              This identifies an encryption key, not an authenticated person.
+              {card.endorsement
+                ? `Receiving key endorsed by ${card.endorsement.walletAddress}`
+                : "Receiving key · wallet identity unverified"}
             </p>
+            {card.endorsement && (
+              <p className="small muted">
+                The wallet endorsed this key. This does not verify a person's
+                identity, possession of the receiving private key, or the sender
+                of a message.
+              </p>
+            )}
           </>
         )}
       </div>
     </Card>
+  );
+}
+
+function ReceiveCardDisplay({
+  identity,
+}: {
+  identity: { label: string; publicKey: string };
+}) {
+  const { busy, runOperation } = useSession();
+  const [signed, setSigned] = useState<ReceiveCard | null>(null);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const mounted = useRef(true);
+  const active = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const card = serializeReceiveCard(
+    signed ?? createReceiveCard(identity.publicKey),
+  );
+  async function sign() {
+    if (busy || active.current) return;
+    active.current = true;
+    setError("");
+    setStatus("");
+    try {
+      await runOperation(async (signer, sessionCurrent) => {
+        const current = () => mounted.current && sessionCurrent();
+        const next = await signReceiveCard(identity.publicKey, signer, current);
+        if (current()) setSigned(next);
+      });
+    } catch {
+      if (mounted.current)
+        setError(
+          "Card signing failed or was rejected. Your unsigned card remains available.",
+        );
+    } finally {
+      active.current = false;
+    }
+  }
+  return (
+    <section className="stack">
+      <h3>{identity.label}</h3>
+      <p className="small muted" style={{ overflowWrap: "anywhere" }}>
+        {signed
+          ? `Receiving key endorsed by ${signed.endorsement!.walletAddress}`
+          : "Receiving key · wallet identity unverified"}
+      </p>
+      <label htmlFor={`card-${identity.label}`}>
+        Receive card for {identity.label}
+      </label>
+      <Textarea
+        id={`card-${identity.label}`}
+        value={card}
+        readOnly
+        rows={signed ? 4 : 2}
+      />
+      <Button
+        onClick={() => {
+          void navigator.clipboard.writeText(card).then(
+            () => {
+              if (mounted.current) setStatus("Receive card copied.");
+            },
+            () => {
+              if (mounted.current)
+                setStatus("Copy unavailable. Select and copy the card above.");
+            },
+          );
+        }}
+      >
+        Copy Receive card
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => {
+          const url = URL.createObjectURL(
+            new Blob([card], { type: "text/plain" }),
+          );
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "receive-card.txt";
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }}
+      >
+        Export Receive card
+      </Button>
+      {signed ? (
+        <>
+          <p className="small muted">
+            Wallet endorsement verified. This does not prove a person's identity
+            or ownership of the receiving private key.
+          </p>
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              setSigned(null);
+              setStatus("");
+            }}
+          >
+            Use unsigned card
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="small muted">
+            Optional: endorse this key with your wallet. One additional
+            signature; your wallet address will be included in the shared card.
+          </p>
+          <Button variant="outline" disabled={busy} onClick={() => void sign()}>
+            Sign Receive card
+          </Button>
+        </>
+      )}
+      {status && <p role="status">{status}</p>}
+      {error && <p role="alert">{error}</p>}
+    </section>
   );
 }

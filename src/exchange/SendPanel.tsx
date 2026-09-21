@@ -8,7 +8,7 @@ import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
 import { walletErrorKind, walletErrorMessages } from "@/wallet/errors";
 import { ReceiveCardImport } from "./IdentityPanel";
-import type { ReceiveCard } from "./receive-card";
+import { serializeReceiveCard, type ReceiveCard } from "./receive-card";
 import { sealedSeedFragment, sealedSeedLink } from "./sealed-seed";
 import {
   MAX_MESSAGE_BYTES,
@@ -108,7 +108,7 @@ export function SendPanel() {
           const next = await prepareMessage(
             client,
             message,
-            JSON.stringify(recipient),
+            serializeReceiveCard(recipient!),
             expiresAt,
             selected,
             isCurrent,

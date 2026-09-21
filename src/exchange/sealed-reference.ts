@@ -20,6 +20,7 @@ import {
 import {
   createReceiveCard,
   parseReceiveCard,
+  serializeReceiveCard,
   type ReceiveCard,
 } from "./receive-card";
 
@@ -146,7 +147,7 @@ export async function sealReference(
   recipient: ReceiveCard,
   supported: SupportedOrigins,
 ): Promise<SealedReference> {
-  const card = parseReceiveCard(JSON.stringify(recipient));
+  const card = parseReceiveCard(serializeReceiveCard(recipient));
   const reference = validateReference(referenceInput, supported);
   const metadata: Header = {
     format: "zkbytes-sealed-reference",

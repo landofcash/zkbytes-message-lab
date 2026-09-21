@@ -36,13 +36,21 @@ describe("MVP shell", () => {
       )) as HTMLTextAreaElement
     ).value;
     expect(card).not.toContain("privateKey");
+    expect(card).toMatch(/^zkbytes\.v1\.[A-Za-z0-9_-]{43}$/);
+    await user.click(screen.getByRole("button", { name: "Sign Receive card" }));
+    await screen.findByRole("button", { name: "Use unsigned card" });
+    const signedCard = (
+      screen.getByLabelText("Receive card for personal") as HTMLTextAreaElement
+    ).value;
+    expect(signedCard.split(".")).toHaveLength(5);
     await user.click(screen.getByRole("link", { name: "Encrypt" }));
     await user.click(screen.getByLabelText("Paste a Receive card"));
-    await user.paste(card);
+    await user.paste(signedCard);
     await user.click(
       screen.getByRole("button", { name: "Import Receive card" }),
     );
     expect(screen.getByText(/Receive card valid/)).toBeInTheDocument();
+    expect(screen.getByText(/Receiving key endorsed by/)).toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Decrypt" }));
     expect(screen.getByLabelText("Receive card for personal")).toHaveValue(
       card,
