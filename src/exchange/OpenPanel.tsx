@@ -7,10 +7,15 @@ import { TextOutput } from "@/components/ui/text-output";
 import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
 import { openMessage, openMessageError, type OpenedMessage } from "./open";
+import { OpenIdentitySetup } from "./OpenIdentitySetup";
 
-export function OpenPanel() {
+export function OpenPanel({
+  onConnectWallet,
+}: {
+  onConnectWallet: () => void;
+}) {
   const location = useLocation();
-  const { identities, busy, runIdentityOperation } = useSession();
+  const { sessionEpoch, identityEpoch } = useSession();
   const [text, setText] = useState(
     () =>
       location.hash ||
@@ -18,6 +23,25 @@ export function OpenPanel() {
         ? location.state.sealedInput.slice(0, 12000)
         : ""),
   );
+  return (
+    <OpenPanelContent
+      key={`${sessionEpoch}:${identityEpoch}`}
+      text={text}
+      setText={setText}
+      onConnectWallet={onConnectWallet}
+    />
+  );
+}
+function OpenPanelContent({
+  text,
+  setText,
+  onConnectWallet,
+}: {
+  text: string;
+  setText(value: string): void;
+  onConnectWallet(): void;
+}) {
+  const { identities, busy, runIdentityOperation } = useSession();
   const [selected, setSelected] = useState("");
   const [result, setResult] = useState<OpenedMessage | null>(null);
   const [error, setError] = useState("");
@@ -63,95 +87,99 @@ export function OpenPanel() {
     }
   }
   return (
-    <Card>
-      <div className="card-head">
-        <h2>Decrypt a message</h2>
-      </div>
-      <div className="card-body stack">
-        <p>
-          Paste a sealed link or the contents of a sealed-seed file. Choose a
-          restored receiving identity, then decrypt explicitly.
-        </p>
-        {!configuration.client && <p role="status">{configuration.message}</p>}
-        <Link
-          className="identity-setup-link"
-          to="/identities"
-          state={{ sealedInput: text }}
-        >
-          Create or restore an identity
-        </Link>
-        <label htmlFor="sealed-input">Sealed link or encrypted seed</label>
-        <Textarea
-          id="sealed-input"
-          rows={4}
-          maxLength={12000}
-          value={text}
-          disabled={working}
-          onChange={(event) => {
-            clearResult();
-            setText(event.target.value);
-          }}
-        />
-        <label htmlFor="receiving-identity">Receiving identity</label>
-        <select
-          id="receiving-identity"
-          value={publicKey}
-          disabled={busy}
-          onChange={(event) => {
-            clearResult();
-            setSelected(event.target.value);
-          }}
-        >
-          {!identities.length && (
-            <option value="">Restore receiving keys first</option>
+    <div className="stack">
+      <OpenIdentitySetup
+        selected={publicKey}
+        onSelect={(key) => {
+          clearResult();
+          setSelected(key);
+        }}
+        onConnectWallet={onConnectWallet}
+      />
+      <Card>
+        <div className="card-head">
+          <h2>Decrypt a message</h2>
+        </div>
+        <div className="card-body stack">
+          <p>
+            Paste a sealed link or the contents of a sealed-seed file. Choose a
+            restored receiving identity, then decrypt explicitly.
+          </p>
+          {!configuration.client && (
+            <p role="status">{configuration.message}</p>
           )}
-          {identities.map((identity) => (
-            <option key={identity.publicKey} value={identity.publicKey}>
-              {identity.label}
-            </option>
-          ))}
-        </select>
-        <Button
-          disabled={
-            !configuration.client ||
-            !publicKey ||
-            !text.trim() ||
-            busy ||
-            working
-          }
-          onClick={() => void decrypt()}
-        >
-          {working ? "Decrypting…" : "Decrypt message"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            clearResult();
-            setText("");
-          }}
-        >
-          Clear message
-        </Button>
-        {error && <p role="alert">{error}</p>}
-        {result && (
-          <section className="stack">
-            <p role="status" className="success">
-              Message verified and decrypted.
-            </p>
-            <p>Sender identity unverified</p>
-            {result.expired && (
-              <p role="status">
-                This authentic message has expired. Cached content may remain
-                available temporarily.
+          <label htmlFor="sealed-input">Sealed link or encrypted seed</label>
+          <Textarea
+            id="sealed-input"
+            rows={4}
+            maxLength={12000}
+            value={text}
+            disabled={working}
+            onChange={(event) => {
+              clearResult();
+              setText(event.target.value);
+            }}
+          />
+          <p className="small muted">
+            {publicKey
+              ? `Receiving identity: ${identities.find((identity) => identity.publicKey === publicKey)?.label}`
+              : "Connect your wallet and restore an identity above to decrypt."}
+          </p>
+          <Button
+            disabled={
+              !configuration.client ||
+              !publicKey ||
+              !text.trim() ||
+              busy ||
+              working
+            }
+            onClick={() => void decrypt()}
+          >
+            {working ? "Decrypting…" : "Decrypt message"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              clearResult();
+              setText("");
+            }}
+          >
+            Clear message
+          </Button>
+          {error && <p role="alert">{error}</p>}
+          {result && (
+            <section className="stack">
+              <p role="status" className="success">
+                Message verified and decrypted.
               </p>
-            )}
-            <p className="small muted">Expires at (UTC): {result.expiresAt}</p>
-            <TextOutput id="decrypted-message" label="Decrypted message" prose>
-              {result.plaintext}
-            </TextOutput>
-          </section>
-        )}
-      </div>
-    </Card>
+              <p>Sender identity unverified</p>
+              {result.expired && (
+                <p role="status">
+                  This authentic message has expired. Cached content may remain
+                  available temporarily.
+                </p>
+              )}
+              <p className="small muted">
+                Expires at (UTC): {result.expiresAt}
+              </p>
+              <TextOutput
+                id="decrypted-message"
+                label="Decrypted message"
+                prose
+              >
+                {result.plaintext}
+              </TextOutput>
+            </section>
+          )}
+        </div>
+      </Card>
+      <Link
+        className="identity-setup-link"
+        to="/identities"
+        state={{ sealedInput: text }}
+      >
+        Manage saved identities
+      </Link>
+    </div>
   );
 }

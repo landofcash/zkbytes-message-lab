@@ -25,6 +25,7 @@ import { Card } from "@/components/ui/card";
 import { configuration } from "@/config/env";
 import { walletNetwork } from "@/config/wallet";
 import { WalletModal } from "@/wallet/WalletModal";
+import { WalletApprovalNotice } from "@/wallet/WalletApprovalNotice";
 import { CompatibilityPanel } from "@/wallet/CompatibilityPanel";
 import { useSession } from "@/wallet/session-store";
 import { isTheme, setTheme, themes } from "./theme";
@@ -173,7 +174,12 @@ export function App() {
               path="/send"
               element={<SendPage key={session?.address ?? "disconnected"} />}
             />
-            <Route path="/open" element={<DecryptPage />} />
+            <Route
+              path="/open"
+              element={
+                <DecryptPage onConnectWallet={() => setWalletOpen(true)} />
+              }
+            />
             <Route
               path="/recover"
               element={<ManagementPage mode="recover" />}
@@ -202,6 +208,7 @@ export function App() {
         </main>
       </div>
       <WalletModal open={walletOpen} onOpenChange={setWalletOpen} />
+      <WalletApprovalNotice />
     </div>
   );
 }
@@ -303,8 +310,7 @@ function IdentityPage() {
     </>
   );
 }
-function DecryptPage() {
-  const { sessionEpoch, identityEpoch } = useSession();
+function DecryptPage({ onConnectWallet }: { onConnectWallet(): void }) {
   const location = useLocation();
   return (
     <>
@@ -312,10 +318,10 @@ function DecryptPage() {
         eyebrow="03 / DECRYPT A MESSAGE"
         title="A message for you."
         accent="Unlocked by you."
-        description="Choose an unlocked identity and open your sealed link."
+        description="Connect your wallet, restore your identity, and open your sealed link."
       />
       <div className="stack">
-        <OpenPanel key={`${sessionEpoch}:${identityEpoch}:${location.hash}`} />
+        <OpenPanel key={location.hash} onConnectWallet={onConnectWallet} />
       </div>
     </>
   );

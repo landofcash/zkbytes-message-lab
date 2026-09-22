@@ -158,7 +158,7 @@ it("keeps an incoming sealed link through identity setup and clears unlocked key
   mount("/open#sealed-value");
   expect(screen.queryByLabelText("Key label")).not.toBeInTheDocument();
   await user.click(
-    screen.getByRole("link", { name: "Create or restore an identity" }),
+    screen.getByRole("link", { name: "Manage saved identities" }),
   );
   await connect(user);
   await user.click(

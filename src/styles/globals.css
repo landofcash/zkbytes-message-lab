@@ -1,5 +1,96 @@
 @import "tailwindcss";
 
+.open-wallet,
+.open-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.open-wallet {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.open-wallet p {
+  margin: 6px 0 0;
+}
+.open-identities-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.open-identity {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+}
+.open-identity.selected {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+.open-identity-description {
+  min-width: 0;
+  flex: 1 1 180px;
+  overflow-wrap: anywhere;
+}
+.open-identity-description .badge {
+  display: inline-block;
+  margin-left: 10px;
+}
+.open-identity-description p {
+  margin: 8px 0 0;
+}
+.other-identity {
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.wallet-approval-notice {
+  position: fixed;
+  z-index: 40;
+  right: 20px;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: min(420px, calc(100vw - 40px));
+  padding: 20px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--background) 80%, transparent);
+  pointer-events: none;
+}
+.wallet-approval-notice > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.wallet-approval-notice > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wallet-approval-notice strong {
+  color: var(--primary);
+}
+.wallet-approval-notice p {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.wallet-approval-spinner {
+  animation: wallet-approval-spin 1s linear infinite;
+}
+@keyframes wallet-approval-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .saved-identities-list {
   list-style: none;
   margin: 0;

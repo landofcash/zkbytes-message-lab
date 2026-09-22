@@ -107,23 +107,26 @@ export function ManagementPanel({ mode }: { mode: "recover" | "delete" }) {
         const next = await recoverReference(client, ref);
         if (current()) setStatus(next);
       } else if (kind === "prepare") {
-        await runOperation(async (signer, sessionCurrent) => {
-          const next = await prepareDeletion(
-            client,
-            ref,
-            signer,
-            () => current() && sessionCurrent(),
-          );
-          if (!current() || !sessionCurrent()) {
-            next.dispose();
-            return;
-          }
-          prepared.current = next;
-          setReview({
-            publicKey: next.publicKey,
-            managerIndex: next.managerIndex,
-          });
-        });
+        await runOperation(
+          async (signer, sessionCurrent) => {
+            const next = await prepareDeletion(
+              client,
+              ref,
+              signer,
+              () => current() && sessionCurrent(),
+            );
+            if (!current() || !sessionCurrent()) {
+              next.dispose();
+              return;
+            }
+            prepared.current = next;
+            setReview({
+              publicKey: next.publicKey,
+              managerIndex: next.managerIndex,
+            });
+          },
+          { action: "delete" },
+        );
       } else {
         const candidate = prepared.current;
         if (!candidate) return;

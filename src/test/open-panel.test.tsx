@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import { OpenPanel } from "@/exchange/OpenPanel";
 
-const mocks = vi.hoisted(() => ({ open: vi.fn() }));
+const mocks = vi.hoisted(() => ({ open: vi.fn(), identityEpoch: 0 }));
 vi.mock("@/config/env", () => ({ configuration: { client: {} } }));
 vi.mock("@/exchange/open", () => ({
   openMessage: mocks.open,
@@ -13,6 +13,10 @@ vi.mock("@/exchange/open", () => ({
 vi.mock("@/wallet/session-store", () => ({
   useSession: () => ({
     identities: [{ label: "personal", publicKey: "public" }],
+    savedIdentities: [],
+    session: { address: "0x1234", walletName: "Test wallet", kind: "fixture" },
+    identityEpoch: mocks.identityEpoch,
+    sessionEpoch: 0,
     busy: false,
     runIdentityOperation: (
       _key: string,
@@ -22,11 +26,12 @@ vi.mock("@/wallet/session-store", () => ({
 }));
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.identityEpoch = 0;
 });
 function mount() {
   return render(
     <MemoryRouter initialEntries={["/open#encrypted-seed"]}>
-      <OpenPanel />
+      <OpenPanel onConnectWallet={() => {}} />
     </MemoryRouter>,
   );
 }
@@ -52,6 +57,33 @@ it("only decrypts explicitly, labels sender identity unverified and clears plain
   expect(screen.queryByLabelText("Decrypted message")).not.toBeInTheDocument();
   expect(screen.getByLabelText("Sealed link or encrypted seed")).toHaveValue(
     "",
+  );
+});
+
+it("preserves edited encrypted input but clears plaintext when identities are invalidated", async () => {
+  mocks.open.mockResolvedValue({
+    plaintext: "Private result",
+    expiresAt: "2035-01-01T00:00:00Z",
+    expired: false,
+  });
+  const user = userEvent.setup();
+  const view = mount();
+  const input = screen.getByLabelText("Sealed link or encrypted seed");
+  await user.clear(input);
+  await user.type(input, "manually pasted link");
+  await user.click(screen.getByRole("button", { name: "Decrypt message" }));
+  expect(screen.getByLabelText("Decrypted message")).toHaveTextContent(
+    "Private result",
+  );
+  mocks.identityEpoch++;
+  view.rerender(
+    <MemoryRouter initialEntries={["/open#encrypted-seed"]}>
+      <OpenPanel onConnectWallet={() => {}} />
+    </MemoryRouter>,
+  );
+  expect(screen.queryByLabelText("Decrypted message")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Sealed link or encrypted seed")).toHaveValue(
+    "manually pasted link",
   );
 });
 

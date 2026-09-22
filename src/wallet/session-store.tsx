@@ -33,7 +33,17 @@ import type { LabWalletAdapter, LabWalletSession } from "./types";
 
 type Compatibility =
   "untested" | "checking" | "compatible" | "nondeterministic" | WalletErrorKind;
+export type WalletAction = {
+  action:
+    "restore" | "encrypt" | "endorse" | "compatibility" | "delete" | "sign";
+  label?: string;
+};
+export type WalletActivity = WalletAction & {
+  walletName: string;
+  phase: "approval" | "processing";
+};
 type SessionState = {
+  walletActivity: WalletActivity | null;
   savedIdentities: SavedIdentity[];
   storageError: string | null;
   importIdentities(text: string): void;
@@ -49,9 +59,10 @@ type SessionState = {
       session: LabWalletSession,
       isCurrent: () => boolean,
     ) => Promise<T>,
+    action?: WalletAction,
   ): Promise<T>;
   identities: { label: string; publicKey: string }[];
-  restoreIdentity(label: string): Promise<void>;
+  restoreIdentity(label: string): Promise<string | undefined>;
   lockIdentities(): void;
   session: LabWalletSession | null;
   busy: boolean;
@@ -104,9 +115,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
   const [sessionEpoch, setSessionEpoch] = useState(0);
   const [identityEpoch, setIdentityEpoch] = useState(0);
+  const [walletActivity, setWalletActivity] = useState<WalletActivity | null>(
+    null,
+  );
   const privateIdentities = useRef<ReceivingIdentity[]>([]);
   const [identities, setIdentities] = useState<SessionState["identities"]>([]);
   function clearPrivateIdentities() {
+    setWalletActivity(null);
     setIdentityEpoch((value) => value + 1);
     privateIdentities.current.forEach((identity) =>
       identity.privateKey.fill(0),
@@ -129,6 +144,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const locked = useRef(false);
   const mounted = useRef(true);
   const unsubscribe = useRef<(() => void) | undefined>(undefined);
+
+  function trackedSigner(
+    selected: LabWalletSession,
+    isCurrent: () => boolean,
+    action: WalletAction,
+  ): LabWalletSession {
+    return {
+      ...selected,
+      async signMessage(message) {
+        if (!isCurrent()) throw new WalletError("wrong-account");
+        // The development fixture does not open an external wallet prompt.
+        if (selected.kind !== "fixture")
+          setWalletActivity({
+            ...action,
+            walletName: selected.walletName,
+            phase: "approval",
+          });
+        const signature = await selected.signMessage(message);
+        if (isCurrent() && selected.kind !== "fixture")
+          setWalletActivity({
+            ...action,
+            walletName: selected.walletName,
+            phase: "processing",
+          });
+        return signature;
+      },
+    };
+  }
 
   useEffect(() => {
     mounted.current = true;
@@ -294,7 +337,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       revision.current === id &&
       current.current === selected;
     try {
-      const reproducible = await checkCompatibility(selected, isCurrent);
+      const reproducible = await checkCompatibility(
+        trackedSigner(selected, isCurrent, { action: "compatibility" }),
+        isCurrent,
+      );
       if (isCurrent())
         setCompatibility(reproducible ? "compatible" : "nondeterministic");
     } catch (cause) {
@@ -305,7 +351,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       locked.current = false;
-      if (mounted.current) setBusy(false);
+      if (mounted.current) {
+        setWalletActivity(null);
+        setBusy(false);
+      }
     }
   }
   async function restoreIdentity(label: string) {
@@ -327,7 +376,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       revision.current === id &&
       current.current === selected;
     try {
-      const identity = await deriveIdentity(selected, label, isCurrent);
+      const identity = await deriveIdentity(
+        trackedSigner(selected, isCurrent, { action: "restore", label }),
+        label,
+        isCurrent,
+      );
       if (!isCurrent()) {
         identity.privateKey.fill(0);
         return;
@@ -381,11 +434,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             "Keys are available for this session, but the identity could not be saved. Browser storage may be unavailable, full, or contain conflicting data.",
         }));
       }
+      return identity.publicKey;
     } catch (cause) {
       if (isCurrent()) setError(walletErrorMessages[walletErrorKind(cause)]);
     } finally {
       locked.current = false;
-      if (mounted.current) setBusy(false);
+      if (mounted.current) {
+        setWalletActivity(null);
+        setBusy(false);
+      }
     }
   }
   async function runOperation<T>(
@@ -393,6 +450,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       session: LabWalletSession,
       isCurrent: () => boolean,
     ) => Promise<T>,
+    action: WalletAction = { action: "sign" },
   ): Promise<T> {
     const selected = current.current;
     if (locked.current) throw new WalletError("pending");
@@ -405,10 +463,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       revision.current === id &&
       current.current === selected;
     try {
-      return await operation(selected, isCurrent);
+      return await operation(
+        trackedSigner(selected, isCurrent, action),
+        isCurrent,
+      );
     } finally {
       locked.current = false;
-      if (mounted.current) setBusy(false);
+      if (mounted.current) {
+        setWalletActivity(null);
+        setBusy(false);
+      }
     }
   }
   async function runIdentityOperation<T>(
@@ -426,6 +490,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
+        walletActivity,
         savedIdentities: saved.identities,
         storageError: saved.error,
         importIdentities,

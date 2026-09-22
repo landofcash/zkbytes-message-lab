@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/wallet/session-store";
+import { walletActionProgress } from "@/wallet/WalletApprovalNotice";
 import {
   MAX_BACKUP_BYTES,
   identityId,
@@ -21,6 +22,7 @@ export function SavedIdentitiesPanel() {
     restoreIdentity,
     importIdentities,
     clearSavedIdentities,
+    walletActivity,
   } = useSession();
   const [preview, setPreview] = useState<SavedIdentity[] | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -118,7 +120,13 @@ export function SavedIdentitiesPanel() {
                   onClick={() => void restoreIdentity(item.label)}
                   aria-label={`Restore ${item.label} for ${item.walletAddress}`}
                 >
-                  {restored ? "Keys available" : "Restore identity"}
+                  {matching &&
+                  walletActivity?.action === "restore" &&
+                  walletActivity.label === item.label
+                    ? walletActionProgress(walletActivity)
+                    : restored
+                      ? "Keys available"
+                      : "Restore identity"}
                 </Button>
                 {!matching && (
                   <p className="small muted">

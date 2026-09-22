@@ -3,9 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { walletNetwork } from "@/config/wallet";
 import { useSession } from "./session-store";
+import { walletActionProgress } from "./WalletApprovalNotice";
 export function CompatibilityPanel() {
-  const { session, busy, compatibility, testCompatibility, error } =
-    useSession();
+  const {
+    session,
+    busy,
+    compatibility,
+    testCompatibility,
+    error,
+    walletActivity,
+  } = useSession();
   return (
     <>
       <Card>
@@ -50,7 +57,9 @@ export function CompatibilityPanel() {
               }
               onClick={() => void testCompatibility()}
             >
-              Check compatibility
+              {walletActivity?.action === "compatibility"
+                ? walletActionProgress(walletActivity)
+                : "Check compatibility"}
               <ArrowRight size={16} />
             </Button>
           </div>

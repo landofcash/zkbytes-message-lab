@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { CopyableField } from "@/components/ui/copyable-field";
 import { useSession } from "@/wallet/session-store";
+import { walletActionProgress } from "@/wallet/WalletApprovalNotice";
 import {
   createReceiveCard,
   parseReceiveCard,
@@ -22,6 +23,7 @@ export function IdentityPanel() {
     error,
     sessionEpoch,
     identityEpoch,
+    walletActivity,
   } = useSession();
   const [label, setLabel] = useState("personal");
   const [copyStatus, setCopyStatus] = useState("");
@@ -58,7 +60,10 @@ export function IdentityPanel() {
             spaces.
           </p>
           <Button type="submit" disabled={busy || !session}>
-            Create / restore keys
+            {walletActivity?.action === "restore" &&
+            walletActivity.label === label
+              ? walletActionProgress(walletActivity)
+              : "Create / restore keys"}
           </Button>
         </form>
         {!session && (
@@ -185,7 +190,7 @@ function ReceiveCardDisplay({
 }: {
   identity: { label: string; publicKey: string };
 }) {
-  const { busy, runOperation } = useSession();
+  const { busy, runOperation, walletActivity } = useSession();
   const [signed, setSigned] = useState<ReceiveCard | null>(null);
   const [error, setError] = useState("");
   const mounted = useRef(true);
@@ -205,11 +210,18 @@ function ReceiveCardDisplay({
     active.current = true;
     setError("");
     try {
-      await runOperation(async (signer, sessionCurrent) => {
-        const current = () => mounted.current && sessionCurrent();
-        const next = await signReceiveCard(identity.publicKey, signer, current);
-        if (current()) setSigned(next);
-      });
+      await runOperation(
+        async (signer, sessionCurrent) => {
+          const current = () => mounted.current && sessionCurrent();
+          const next = await signReceiveCard(
+            identity.publicKey,
+            signer,
+            current,
+          );
+          if (current()) setSigned(next);
+        },
+        { action: "endorse", label: identity.label },
+      );
     } catch {
       if (mounted.current)
         setError(
@@ -258,7 +270,10 @@ function ReceiveCardDisplay({
             signature; your wallet address will be included in the shared link.
           </p>
           <Button variant="outline" disabled={busy} onClick={() => void sign()}>
-            Sign Receive link
+            {walletActivity?.action === "endorse" &&
+            walletActivity.label === identity.label
+              ? walletActionProgress(walletActivity)
+              : "Sign Receive link"}
           </Button>
         </>
       )}

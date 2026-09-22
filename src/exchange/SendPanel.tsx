@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/input";
 import { TextOutput } from "@/components/ui/text-output";
 import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
+import { walletActionProgress } from "@/wallet/WalletApprovalNotice";
 import { walletErrorKind, walletErrorMessages } from "@/wallet/errors";
 import { ReceiveCardImport } from "./IdentityPanel";
 import {
@@ -55,7 +56,7 @@ export function SendPanel({
 }: {
   initialRecipientText?: string;
 }) {
-  const { session, busy, runOperation } = useSession();
+  const { session, busy, runOperation, walletActivity } = useSession();
   const client = configuration.client;
   const [message, setMessage] = useState("");
   const [recipient, setRecipient] = useState<ReceiveCard | null>(() => {
@@ -107,44 +108,47 @@ export function SendPanel({
     const id = generation.current;
     const localCurrent = () => mounted.current && generation.current === id;
     try {
-      await runOperation(async (selected, sessionCurrent) => {
-        const isCurrent = () => localCurrent() && sessionCurrent();
-        if (action === "prepare") {
-          if (
-            !message.trim() ||
-            new TextEncoder().encode(message).length > MAX_MESSAGE_BYTES
-          ) {
-            setError("Enter a message up to 64 KiB.");
-            return;
+      await runOperation(
+        async (selected, sessionCurrent) => {
+          const isCurrent = () => localCurrent() && sessionCurrent();
+          if (action === "prepare") {
+            if (
+              !message.trim() ||
+              new TextEncoder().encode(message).length > MAX_MESSAGE_BYTES
+            ) {
+              setError("Enter a message up to 64 KiB.");
+              return;
+            }
+            const expiresAt = canonicalTimestamp(
+              new Date(Date.now() + Number(hours) * 3600000),
+            );
+            const next = await prepareMessage(
+              client,
+              message,
+              serializeReceiveCard(recipient!),
+              expiresAt,
+              selected,
+              isCurrent,
+            );
+            if (isCurrent()) {
+              setCandidate(next);
+              setMessage("");
+              setStatus("ready");
+            }
+          } else {
+            if (!isCurrent()) return;
+            const next =
+              action === "upload"
+                ? await uploadCandidate(client, candidate!)
+                : await recoverCandidate(client, candidate!);
+            if (isCurrent()) {
+              setStatus(next);
+              setCopied(false);
+            }
           }
-          const expiresAt = canonicalTimestamp(
-            new Date(Date.now() + Number(hours) * 3600000),
-          );
-          const next = await prepareMessage(
-            client,
-            message,
-            serializeReceiveCard(recipient!),
-            expiresAt,
-            selected,
-            isCurrent,
-          );
-          if (isCurrent()) {
-            setCandidate(next);
-            setMessage("");
-            setStatus("ready");
-          }
-        } else {
-          if (!isCurrent()) return;
-          const next =
-            action === "upload"
-              ? await uploadCandidate(client, candidate!)
-              : await recoverCandidate(client, candidate!);
-          if (isCurrent()) {
-            setStatus(next);
-            setCopied(false);
-          }
-        }
-      });
+        },
+        { action: "encrypt" },
+      );
     } catch (cause) {
       if (localCurrent())
         setError(
@@ -243,7 +247,9 @@ export function SendPanel({
                 disabled={!canOperate || !recipient || !message.trim()}
                 onClick={() => void operate("prepare")}
               >
-                Confirm & sign to encrypt
+                {working && walletActivity?.action === "encrypt"
+                  ? walletActionProgress(walletActivity)
+                  : "Confirm & sign to encrypt"}
               </Button>
               <Button
                 disabled={disabled || !message}

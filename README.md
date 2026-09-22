@@ -60,14 +60,28 @@ clicking copies the full URL and briefly shows “Copied!” without navigating 
 Hover to see the full value. The field follows the selected zkbytes theme.
 Decrypted messages use text displays, not read-only input fields.
 
-On **Create identity**, restore the matching receiving identity. Then on **Decrypt**, paste a sealed link or
-the contents of an exported envelope, select the identity and click **Decrypt
-message**. Opening a URL prefills the fragment but never signs, downloads or
+On **Decrypt** (`/open`), connect your wallet directly on the page, then restore a
+saved receiving identity or enter its exact label under **Other identity label**.
+Saved entries show **Locked / Ready**; entries for another account require the
+matching wallet. A restored identity is selected automatically, including when
+browser storage cannot save it. Paste a sealed link or the contents of an exported
+envelope and click **Decrypt message**. The encrypted input stays in place through
+wallet connection, key locking and wallet changes; decrypted content is cleared.
+**Manage saved identities** opens the full backup and identity management page.
+Opening a URL prefills the fragment but never signs, downloads or
 decrypts automatically. The seed is decrypted before any storage request. The
 downloaded object is verified before plaintext is displayed. Both compact formats,
 earlier Base32 links and original full-reference envelopes are supported. Plaintext
 clears on Clear message, key lock, wallet/account/network changes and navigation
 away. Authentic expired content is labeled separately from verification failure.
+
+Signature requests show a persistent, themed **Approve in your wallet** panel
+with the wallet name and action. It does not take focus or open a second modal.
+The initiating action shows **Waiting for wallet…** and duplicate requests remain
+disabled until the wallet responds. After approval, the panel shows processing
+progress and closes when finished. Rejection is reported beside the action.
+Wallet/account/network changes clear stale feedback. Downloads, local decryption
+and the development fixture never display a request for external wallet approval.
 
 New links use `/open#<encrypted-seed>` (87 fragment characters) by default.
 Enable **Include recipient public key in link** to use
