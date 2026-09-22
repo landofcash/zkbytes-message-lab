@@ -44,7 +44,7 @@ it("only decrypts explicitly, labels sender identity unverified and clears plain
   );
   expect(mocks.open).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Decrypt message" }));
-  expect(screen.getByLabelText("Decrypted message")).toHaveValue(
+  expect(screen.getByLabelText("Decrypted message")).toHaveTextContent(
     "A private message",
   );
   expect(screen.getByText("Sender identity unverified")).toBeInTheDocument();

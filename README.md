@@ -4,12 +4,12 @@ The homepage at `/` introduces the app with custom animated SVG art and direct
 links to **Encrypt**, **Decrypt**, and receiving-key setup. It supports all three
 themes, mobile layouts and reduced-motion preferences.
 
-The two main areas are **Encrypt** and **Decrypt**. Use **Connect wallet** in the
+The three main areas are **Create identity**, **Encrypt** and **Decrypt**. Use **Connect wallet** in the
 top bar to open wallet management; after connection it becomes **Manage wallet**.
 The modal includes connection choices, the selected account/network, network
 switching and disconnect. It yields to the wallet provider's own connection UI.
 
-Receiving identities are available under **Decrypt**. Enter an exact label
+Receiving identities are available under **Create identity** (`/identities`). Enter an exact label
 (for example `personal`) and choose **Create / restore
 keys**. Approve one signature, then copy or export the compact public Receive card:
 `zkbytes.v1.<publicKey>`. Export saves `receive-card.txt`; only compact cards are
@@ -20,6 +20,25 @@ by **Lock / clear keys**, wallet changes, disconnect or leaving the app.
 Compatibility testing is optional under **Tools > Compatibility**. Neither key
 restoration nor Encrypt requires running it first; every signature is still
 validated. Reproducible wallet signatures remain necessary to restore the same keys.
+
+After successful creation/restoration, the browser saves the wallet address,
+connection type, exact label, receiving profile and public key. **Saved identities**
+lets you restore an entry after reconnecting its wallet. Reloading does not connect,
+sign or unlock anything automatically. The derived key must match the saved public
+key; a mismatch leaves the saved entry intact and clears unlocked keys.
+
+**Export all identities** downloads `zkbytes-identities.json`. On another device,
+open Create identity, choose **Import identity backup**, review the entries, and
+confirm the merge. Reconnect each wallet and restore the desired identities with
+one signature each. The backup contains public keys and wallet/label associations,
+not private keys, seed phrases, passwords or secret signatures. It cannot replace
+access to the original wallet. Keep the file private if the associations are sensitive.
+
+**Clear saved identities** requires confirmation, removes the entire saved identity
+list and locks keys in memory. It does not delete messages, wallet-provider data or
+the theme preference. Other open tabs invalidate their keys when the list changes.
+Storage errors are shown explicitly; keys may still be used in the current session
+if saving fails. Browser profiles/origins keep separate lists.
 
 **Sign Receive card** optionally adds a wallet endorsement through a separate
 approval: `zkbytes.v1.<publicKey>.<walletAddress>.<signature>`. The key and public
@@ -32,9 +51,11 @@ returns to the shorter form. Secret key-derivation signatures are never exported
 On **Encrypt**, paste and import a recipient's Receive card to validate it and review
 the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
 Review the prepared seed, creator and destination origins before **Confirm upload**.
-An active upload enables sealed-link copy and envelope download.
+An active upload shows a selectable sealed link with a copy action and grouped
+message details. Receive cards and decrypted messages also use text displays,
+not read-only input fields.
 
-On **Decrypt**, restore the matching receiving identity, paste a sealed link or
+On **Create identity**, restore the matching receiving identity. Then on **Decrypt**, paste a sealed link or
 the contents of an exported envelope, select the identity and click **Decrypt
 message**. Opening a URL prefills the fragment but never signs, downloads or
 decrypts automatically. The seed is decrypted before any storage request. The
@@ -48,7 +69,7 @@ Enable **Include recipient public key in link** to use
 `/open#<recipient-public-key>.<encrypted-seed>` (131 fragment characters).
 Both fields use canonical unpadded Base64URL (`A-Z`, `a-z`, `0-9`, `-`, `_`);
 `.` is an unambiguous separator. Switching formats does not sign, encrypt or upload
-again. Envelope download saves the selected fragment as `sealed-seed.txt`.
+again. There is no sealed-envelope download action; copy the link to share it.
 
 SDK 0.1.4 encrypts the raw 16-byte seed directly with HPKE. No origins, expiration,
 creator descriptor or JSON are embedded. The recipient selects their receiving
@@ -110,7 +131,8 @@ Configuration status appears under Diagnostics. Every `VITE_` value is public.
 The fixture is a public, insecure development identity. Never fund it or use it
 for private messages. Its adapter and connection control are excluded from production
 builds. Connection and signing are explicit button actions. Signatures and derived
-private keys are never persisted by the app. The app stores only the selected theme;
+private keys are never persisted by the app. The app stores the selected theme and
+the saved identity metadata described above;
 MetaMask Connect and Reown may store their own connection/session metadata. Their analytics are
 disabled. The Encrypt page contains a local draft field; navigation away or a wallet
 account change/disconnect clears it.
@@ -181,7 +203,7 @@ used for sealed links and is parsed locally only after an explicit Decrypt actio
 Real-wallet acceptance is manual; mocked provider tests cover signing requests,
 account changes, disconnects, stale results and provider errors. Storage acceptance
 remains a separate live acceptance task. The latest local implementation checks
-passed 86 tests, lint, typecheck and build (2026-09-21). Browser fixture checks are
+passed 95 tests, lint, typecheck and build (2026-09-22). Browser fixture checks are
 not yet a committed, repeatable browser-test suite; no CI workflow exists in this checkout.
 
 ## Acceptance status

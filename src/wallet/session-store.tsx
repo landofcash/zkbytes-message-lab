@@ -19,11 +19,25 @@ import {
   type WalletErrorKind,
 } from "./errors";
 import { metamaskAdapter } from "./metamask-adapter";
+import { IDENTITY_PROFILE } from "@/exchange/identity";
+import {
+  IDENTITY_STORAGE_KEY,
+  identityId,
+  mergeIdentities,
+  readSavedIdentities,
+  parseIdentityBackup,
+  serializeIdentityBackup,
+  type SavedIdentity,
+} from "@/exchange/saved-identities";
 import type { LabWalletAdapter, LabWalletSession } from "./types";
 
 type Compatibility =
   "untested" | "checking" | "compatible" | "nondeterministic" | WalletErrorKind;
 type SessionState = {
+  savedIdentities: SavedIdentity[];
+  storageError: string | null;
+  importIdentities(text: string): void;
+  clearSavedIdentities(): void;
   sessionEpoch: number;
   identityEpoch: number;
   runIdentityOperation<T>(
@@ -53,6 +67,41 @@ type SessionState = {
 };
 const Context = createContext<SessionState | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const [saved, setSaved] = useState(() => {
+    try {
+      return {
+        identities: readSavedIdentities(),
+        error: null as string | null,
+      };
+    } catch {
+      return {
+        identities: [] as SavedIdentity[],
+        error:
+          "Saved identities could not be read. Browser storage may be unavailable or the data invalid. Export any available list before clearing it.",
+      };
+    }
+  });
+  const savedRef = useRef(saved.identities);
+  function updateSaved(identities: SavedIdentity[]) {
+    savedRef.current = identities;
+    setSaved({ identities, error: null });
+  }
+  function saveIdentities(incoming: SavedIdentity[]) {
+    const next = mergeIdentities(readSavedIdentities(), incoming);
+    localStorage.setItem(IDENTITY_STORAGE_KEY, serializeIdentityBackup(next));
+    updateSaved(next);
+  }
+  function importIdentities(text: string) {
+    const incoming = parseIdentityBackup(text);
+    saveIdentities(incoming);
+  }
+  function clearSavedIdentities() {
+    // Remove only this app's identity list, never unrelated origin/wallet data.
+    localStorage.removeItem(IDENTITY_STORAGE_KEY);
+    updateSaved([]);
+    lockIdentities();
+    setError(null);
+  }
   const [sessionEpoch, setSessionEpoch] = useState(0);
   const [identityEpoch, setIdentityEpoch] = useState(0);
   const privateIdentities = useRef<ReceivingIdentity[]>([]);
@@ -91,8 +140,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setCompatibility("untested");
     };
     window.addEventListener("pagehide", hide);
+    const storage = (event: StorageEvent) => {
+      if (event.key !== IDENTITY_STORAGE_KEY && event.key !== null) return;
+      hide();
+      try {
+        updateSaved(readSavedIdentities());
+      } catch {
+        setSaved((value) => ({
+          ...value,
+          error:
+            "Saved identities changed but could not be read. Recheck browser storage before restoring.",
+        }));
+      }
+    };
+    window.addEventListener("storage", storage);
     return () => {
       window.removeEventListener("pagehide", hide);
+      window.removeEventListener("storage", storage);
       clearPrivateIdentities();
       mounted.current = false;
       revision.current++;
@@ -271,13 +335,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const existing = privateIdentities.current.find(
         (item) => item.label === label,
       );
-      if (existing && existing.publicKey !== identity.publicKey) {
+      const remembered = savedRef.current.find(
+        (item) =>
+          identityId(item) ===
+          identityId({ walletAddress: selected.address, label }),
+      );
+      if (
+        (existing && existing.publicKey !== identity.publicKey) ||
+        (remembered && remembered.publicKey !== identity.publicKey)
+      ) {
         identity.privateKey.fill(0);
         clearPrivateIdentities();
         setIdentities([]);
-        setCompatibility("nondeterministic");
+        setCompatibility(existing ? "nondeterministic" : "untested");
         setError(
-          "This wallet returned different keys for the same label. The receiving keys were cleared. Check signing compatibility before sharing a new Receive card.",
+          "The restored key differs from the saved key for this wallet and label. Receiving keys were cleared; the saved record was not replaced. Check the wallet, backup and signing compatibility.",
         );
         return;
       }
@@ -292,6 +364,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           publicKey,
         })),
       );
+      try {
+        saveIdentities([
+          {
+            walletAddress: selected.address.toLowerCase(),
+            walletKind: selected.kind,
+            label,
+            publicKey: identity.publicKey,
+            profile: IDENTITY_PROFILE,
+          },
+        ]);
+      } catch {
+        setSaved((value) => ({
+          ...value,
+          error:
+            "Keys are available for this session, but the identity could not be saved. Browser storage may be unavailable, full, or contain conflicting data.",
+        }));
+      }
     } catch (cause) {
       if (isCurrent()) setError(walletErrorMessages[walletErrorKind(cause)]);
     } finally {
@@ -337,6 +426,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
+        savedIdentities: saved.identities,
+        storageError: saved.error,
+        importIdentities,
+        clearSavedIdentities,
         sessionEpoch,
         identityEpoch,
         runIdentityOperation,

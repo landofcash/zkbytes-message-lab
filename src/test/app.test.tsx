@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/app/App";
 import { SessionProvider } from "@/wallet/session-store";
 import { setTheme } from "@/app/theme";
 import { readConfiguration } from "@/config/env";
 vi.mock("@/config/reown", () => ({ reownProjectId: null }));
+beforeEach(() => localStorage.clear());
 
 function renderApp(path = "/") {
   return render(
@@ -20,7 +21,7 @@ function renderApp(path = "/") {
 describe("MVP shell", () => {
   it("restores and exchanges a public Receive card, preserves keys across navigation, and locks them", async () => {
     const user = userEvent.setup();
-    renderApp("/open");
+    renderApp("/identities");
     await user.click(screen.getByRole("button", { name: "Connect wallet" }));
     await user.click(screen.getByRole("button", { name: /Connect fixture/ }));
     await user.click(
@@ -31,17 +32,15 @@ describe("MVP shell", () => {
     });
     await user.click(restore);
     const card = (
-      (await screen.findByLabelText(
-        "Receive card for personal",
-      )) as HTMLTextAreaElement
-    ).value;
+      (await screen.findByLabelText("Receive card for personal")) as HTMLElement
+    ).textContent!;
     expect(card).not.toContain("privateKey");
     expect(card).toMatch(/^zkbytes\.v1\.[A-Za-z0-9_-]{43}$/);
     await user.click(screen.getByRole("button", { name: "Sign Receive card" }));
     await screen.findByRole("button", { name: "Use unsigned card" });
     const signedCard = (
-      screen.getByLabelText("Receive card for personal") as HTMLTextAreaElement
-    ).value;
+      screen.getByLabelText("Receive card for personal") as HTMLElement
+    ).textContent!;
     expect(signedCard.split(".")).toHaveLength(5);
     await user.click(screen.getByRole("link", { name: "Encrypt" }));
     await user.click(screen.getByLabelText("Paste a Receive card"));
@@ -51,10 +50,10 @@ describe("MVP shell", () => {
     );
     expect(screen.getByText(/Receive card valid/)).toBeInTheDocument();
     expect(screen.getByText(/Receiving key endorsed by/)).toBeInTheDocument();
-    await user.click(screen.getByRole("link", { name: "Decrypt" }));
-    expect(screen.getByLabelText("Receive card for personal")).toHaveValue(
-      card,
-    );
+    await user.click(screen.getByRole("link", { name: "Create identity" }));
+    expect(
+      screen.getByLabelText("Receive card for personal"),
+    ).toHaveTextContent(card);
     await user.click(screen.getByRole("button", { name: "Lock / clear keys" }));
     expect(
       screen.queryByLabelText("Receive card for personal"),
@@ -64,7 +63,7 @@ describe("MVP shell", () => {
     );
     expect(
       await screen.findByLabelText("Receive card for personal"),
-    ).toHaveValue(card);
+    ).toHaveTextContent(card);
     await user.click(screen.getByRole("button", { name: "Manage wallet" }));
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
     await user.click(

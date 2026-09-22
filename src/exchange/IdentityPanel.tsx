@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { TextOutput } from "@/components/ui/text-output";
 import { useSession } from "@/wallet/session-store";
 import {
   createReceiveCard,
@@ -27,13 +28,14 @@ export function IdentityPanel() {
   return (
     <Card>
       <div className="card-head">
-        <h2>Receiving identities</h2>
+        <h2>Create or restore an identity</h2>
       </div>
       <div className="card-body stack">
         <p className="small muted">
           Restore with the same wallet account and exact label, including
           capitalization. Labels are not passwords. Keys stay in memory until
-          locked or the wallet changes.
+          locked or the wallet changes. Your wallet address, label and public
+          key are saved in this browser after restoration.
         </p>
         <form
           onSubmit={(event) => {
@@ -215,15 +217,12 @@ function ReceiveCardDisplay({
           ? `Receiving key endorsed by ${signed.endorsement!.walletAddress}`
           : "Receiving key · wallet identity unverified"}
       </p>
-      <label htmlFor={`card-${identity.label}`}>
-        Receive card for {identity.label}
-      </label>
-      <Textarea
+      <TextOutput
         id={`card-${identity.label}`}
-        value={card}
-        readOnly
-        rows={signed ? 4 : 2}
-      />
+        label={`Receive card for ${identity.label}`}
+      >
+        {card}
+      </TextOutput>
       <Button
         onClick={() => {
           void navigator.clipboard.writeText(card).then(

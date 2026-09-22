@@ -4,12 +4,13 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
+import { TextOutput } from "@/components/ui/text-output";
 import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
 import { walletErrorKind, walletErrorMessages } from "@/wallet/errors";
 import { ReceiveCardImport } from "./IdentityPanel";
 import { serializeReceiveCard, type ReceiveCard } from "./receive-card";
-import { sealedSeedFragment, sealedSeedLink } from "./sealed-seed";
+import { sealedSeedLink } from "./sealed-seed";
 import {
   MAX_MESSAGE_BYTES,
   prepareMessage,
@@ -19,10 +20,10 @@ import {
   type UploadState,
 } from "./send";
 
-function download(name: string, value: unknown, plainText = false) {
+function download(name: string, value: unknown) {
   const url = URL.createObjectURL(
-    new Blob([plainText ? String(value) : JSON.stringify(value, null, 2)], {
-      type: plainText ? "text/plain" : "application/json",
+    new Blob([JSON.stringify(value, null, 2)], {
+      type: "application/json",
     }),
   );
   const anchor = document.createElement("a");
@@ -251,26 +252,13 @@ export function SendPanel() {
                   <p>{messages[status]}</p>
                   {status === "active" && (
                     <p>
-                      No need to upload again. Copy the sealed link below or
-                      download the envelope to keep it.
+                      Copy the sealed link below and share it with your
+                      recipient.
                     </p>
                   )}
                 </div>
               </div>
-              <dl style={{ overflowWrap: "anywhere" }}>
-                <dt>Recipient public key</dt>
-                <dd>{candidate.envelope.recipientPublicKey}</dd>
-                <dt>Seed</dt>
-                <dd>{candidate.reference.seed}</dd>
-                <dt>Expected creator</dt>
-                <dd>{candidate.reference.expectedCreator.publicKey}</dd>
-                <dt>Expires at (UTC)</dt>
-                <dd>{candidate.reference.expiresAt}</dd>
-                <dt>Upload origin</dt>
-                <dd>{candidate.reference.apiOrigin}</dd>
-                <dt>Download origin</dt>
-                <dd>{candidate.reference.downloadOrigin}</dd>
-              </dl>
+              {status !== "active" && <MessageDetails candidate={candidate} />}
               {(status === "ready" || status === "not-found") && (
                 <Button
                   disabled={!canOperate}
@@ -285,6 +273,7 @@ export function SendPanel() {
                 status !== "deleted" &&
                 status !== "expired" && (
                   <Button
+                    variant="outline"
                     disabled={!canOperate}
                     onClick={() => void operate("recover")}
                   >
@@ -309,8 +298,9 @@ export function SendPanel() {
                       ? "Includes the public key to help identify the matching receiving identity."
                       : "Shortest link. The recipient selects their receiving identity to open it."}
                   </p>
-                  <label htmlFor="sealed-link">Sealed link</label>
-                  <Textarea id="sealed-link" readOnly rows={3} value={link} />
+                  <TextOutput id="sealed-link" label="Sealed link">
+                    {link}
+                  </TextOutput>
                   <Button
                     onClick={() => {
                       void navigator.clipboard.writeText(link).then(
@@ -324,39 +314,31 @@ export function SendPanel() {
                   >
                     Copy sealed link
                   </Button>
-                  <Button
-                    onClick={() =>
-                      download(
-                        "sealed-seed.txt",
-                        sealedSeedFragment(
-                          candidate.envelope,
-                          includeRecipient,
-                        ),
-                        true,
-                      )
-                    }
-                  >
-                    Download sealed envelope
-                  </Button>
                   <p className="small muted">
                     Share this link with the recipient. They can restore their
-                    receiving keys under Decrypt to open it.
+                    receiving keys under Create identity, then use Decrypt to open it.
                   </p>
                 </>
               )}
+              {status === "active" && <MessageDetails candidate={candidate} />}
               <p className="small muted">
                 Export the sender reference before leaving this page or changing
                 wallets. It contains the storage location hidden by the sealed
                 link. It is not saved automatically.
               </p>
               <Button
+                variant="outline"
                 onClick={() =>
                   download("sender-reference.json", candidate.reference)
                 }
               >
                 Export sender reference
               </Button>
-              <Button disabled={disabled} onClick={() => setConfirmClear(true)}>
+              <Button
+                variant="outline"
+                disabled={disabled}
+                onClick={() => setConfirmClear(true)}
+              >
                 Clear this exchange
               </Button>
               {confirmClear && (
@@ -378,5 +360,61 @@ export function SendPanel() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function MessageDetails({ candidate }: { candidate: Candidate }) {
+  const { reference, envelope } = candidate;
+  const expiration = new Date(reference.expiresAt);
+  const formatted = Number.isFinite(expiration.getTime())
+    ? new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }).format(expiration)
+    : reference.expiresAt;
+  return (
+    <section className="message-details" aria-label="Message details">
+      <div className="message-details-heading">
+        <h3>Message details</h3>
+        <span className="badge">ENCRYPTED</span>
+      </div>
+      <dl className="message-details-list">
+        <div className="detail-expiration">
+          <dt>Expires at (UTC)</dt>
+          <dd>
+            <time dateTime={reference.expiresAt}>{formatted} UTC</time>
+          </dd>
+        </div>
+        <div>
+          <dt>Recipient public key</dt>
+          <dd>
+            <code>{envelope.recipientPublicKey}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Seed</dt>
+          <dd>
+            <code>{reference.seed}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Expected creator</dt>
+          <dd>
+            <code>{reference.expectedCreator.publicKey}</code>
+          </dd>
+        </div>
+      </dl>
+      <dl className="message-details-origins">
+        <div>
+          <dt>Upload origin</dt>
+          <dd>{reference.apiOrigin}</dd>
+        </div>
+        <div>
+          <dt>Download origin</dt>
+          <dd>{reference.downloadOrigin}</dd>
+        </div>
+      </dl>
+    </section>
   );
 }

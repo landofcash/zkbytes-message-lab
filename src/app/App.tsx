@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { HomePage } from "./HomePage";
 import { IdentityPanel } from "@/exchange/IdentityPanel";
+import { SavedIdentitiesPanel } from "@/exchange/SavedIdentitiesPanel";
 import { SendPanel } from "@/exchange/SendPanel";
 import { OpenPanel } from "@/exchange/OpenPanel";
 import { ManagementPanel } from "@/exchange/ManagementPanel";
@@ -29,6 +30,7 @@ import { useSession } from "@/wallet/session-store";
 import { isTheme, setTheme, themes } from "./theme";
 
 const primary = [
+  { to: "/identities", label: "Create identity", icon: KeyRound },
   { to: "/send", label: "Encrypt", icon: Send },
   { to: "/open", label: "Decrypt", icon: ArrowDownToLine },
 ];
@@ -109,6 +111,7 @@ export function App() {
                 zkbytes<span className="brand-dot">.</span>
               </Link>
               <nav className="landing-nav" aria-label="Main navigation">
+                <Link to="/identities">Create identity</Link>
                 <Link to="/send">Encrypt</Link>
                 <Link to="/open">Decrypt</Link>
               </nav>
@@ -161,6 +164,7 @@ export function App() {
           )}
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/identities" element={<IdentityPage />} />
             <Route path="/compatibility" element={<CompatibilityPage />} />
             <Route
               path="/send"
@@ -267,10 +271,33 @@ function HowItWorks() {
           </li>
         </ol>
         <p className="small muted">
-          Restore receiving keys under Decrypt; use Encrypt to send a message.
+          Set up keys under Create identity; use Encrypt to send a message.
         </p>
       </div>
     </Card>
+  );
+}
+function IdentityPage() {
+  const { sessionEpoch, identityEpoch } = useSession();
+  const location = useLocation();
+  return (
+    <>
+      <Hero
+        eyebrow="01 / CREATE IDENTITY"
+        title="Your wallet."
+        accent="Your receiving keys."
+        description="Create an identity, share your Receive card, and keep your wallet and labels ready for next time."
+      />
+      <div className="columns">
+        <IdentityPanel key={`${sessionEpoch}:${identityEpoch}`} />
+        <SavedIdentitiesPanel />
+      </div>
+      <Button asChild variant="outline">
+        <Link to="/open" state={location.state}>
+          Continue to Decrypt
+        </Link>
+      </Button>
+    </>
   );
 }
 function DecryptPage() {
@@ -279,13 +306,12 @@ function DecryptPage() {
   return (
     <>
       <Hero
-        eyebrow="02 / DECRYPT A MESSAGE"
+        eyebrow="03 / DECRYPT A MESSAGE"
         title="A message for you."
         accent="Unlocked by you."
-        description="Restore your receiving keys with your wallet and exact key label, then open a sealed link."
+        description="Choose an unlocked identity and open your sealed link."
       />
-      <div className="columns">
-        <IdentityPanel />
+      <div className="stack">
         <OpenPanel key={`${sessionEpoch}:${identityEpoch}:${location.hash}`} />
       </div>
     </>
@@ -309,7 +335,7 @@ function SendPage() {
   return (
     <>
       <Hero
-        eyebrow="01 / ENCRYPT A MESSAGE"
+        eyebrow="02 / ENCRYPT A MESSAGE"
         title="Write something."
         accent="Keep it private."
         description="Encrypt text for a recipient and share a sealed link. Only the matching receiving key can decrypt the seed."

@@ -89,7 +89,7 @@ describe("Send UI", () => {
     expect(
       screen.getByText("Your encrypted message is saved."),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Sealed link")).toHaveValue(
+    expect(screen.getByLabelText("Sealed link")).toHaveTextContent(
       "https://app.example.com/open#ciphertext",
     );
   });
@@ -137,15 +137,15 @@ describe("Send UI", () => {
       name: "Include recipient public key in link",
     });
     expect(checkbox).not.toBeChecked();
-    expect(screen.getByLabelText("Sealed link")).toHaveValue(
+    expect(screen.getByLabelText("Sealed link")).toHaveTextContent(
       "https://app.example.com/open#ciphertext",
     );
     await user.click(checkbox);
-    expect(screen.getByLabelText("Sealed link")).toHaveValue(
+    expect(screen.getByLabelText("Sealed link")).toHaveTextContent(
       "https://app.example.com/open#recipient.ciphertext",
     );
     await user.click(checkbox);
-    expect(screen.getByLabelText("Sealed link")).toHaveValue(
+    expect(screen.getByLabelText("Sealed link")).toHaveTextContent(
       "https://app.example.com/open#ciphertext",
     );
     expect(mocks.prepare).toHaveBeenCalledOnce();

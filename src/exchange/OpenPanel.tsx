@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { TextOutput } from "@/components/ui/text-output";
 import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
 import { openMessage, openMessageError, type OpenedMessage } from "./open";
@@ -10,7 +11,13 @@ import { openMessage, openMessageError, type OpenedMessage } from "./open";
 export function OpenPanel() {
   const location = useLocation();
   const { identities, busy, runIdentityOperation } = useSession();
-  const [text, setText] = useState(() => location.hash);
+  const [text, setText] = useState(
+    () =>
+      location.hash ||
+      (typeof location.state?.sealedInput === "string"
+        ? location.state.sealedInput.slice(0, 12000)
+        : ""),
+  );
   const [selected, setSelected] = useState("");
   const [result, setResult] = useState<OpenedMessage | null>(null);
   const [error, setError] = useState("");
@@ -66,6 +73,13 @@ export function OpenPanel() {
           restored receiving identity, then decrypt explicitly.
         </p>
         {!configuration.client && <p role="status">{configuration.message}</p>}
+        <Link
+          className="identity-setup-link"
+          to="/identities"
+          state={{ sealedInput: text }}
+        >
+          Create or restore an identity
+        </Link>
         <label htmlFor="sealed-input">Sealed link or encrypted seed</label>
         <Textarea
           id="sealed-input"
@@ -132,13 +146,9 @@ export function OpenPanel() {
               </p>
             )}
             <p className="small muted">Expires at (UTC): {result.expiresAt}</p>
-            <label htmlFor="decrypted-message">Decrypted message</label>
-            <Textarea
-              id="decrypted-message"
-              value={result.plaintext}
-              readOnly
-              rows={8}
-            />
+            <TextOutput id="decrypted-message" label="Decrypted message" prose>
+              {result.plaintext}
+            </TextOutput>
           </section>
         )}
       </div>

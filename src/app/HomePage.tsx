@@ -222,7 +222,7 @@ export function HomePage() {
           <h2>EXPECTING A MESSAGE?</h2>
           <p>Create your Receive card.</p>
         </div>
-        <Link className="landing-receive-link" to="/open">
+        <Link className="landing-receive-link" to="/identities">
           Get receiving keys <ArrowUpRight size={28} />
         </Link>
       </section>
