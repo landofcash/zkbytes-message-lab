@@ -39,6 +39,12 @@ function ManagementPanelContent({
   const { session, busy: walletBusy, runOperation } = useSession();
   const busy = mode === "delete" && walletBusy;
   const [reference, setReference] = useState<ZkbytesReference | null>(null);
+  const referenceInput = useRef<HTMLTextAreaElement>(null);
+  const hadReference = useRef(false);
+  useEffect(() => {
+    if (hadReference.current && !reference) referenceInput.current?.focus();
+    hadReference.current = !!reference;
+  }, [reference]);
   const [review, setReview] = useState<{
     publicKey: string;
     managerIndex: number;
@@ -190,23 +196,53 @@ function ManagementPanelContent({
         </h2>
       </div>
       <div className="card-body stack">
-        <p>
-          Paste the original sender reference exported from Encrypt. A
-          recipient's sealed link is not a sender reference.
-        </p>
+        {!reference && (
+          <p>
+            Paste the original sender reference exported from Encrypt. A
+            recipient's sealed link is not a sender reference.
+          </p>
+        )}
         {!configuration.client && <p role="status">{configuration.message}</p>}
-        <label htmlFor="sender-reference">Sender reference JSON</label>
-        <Textarea
-          id="sender-reference"
-          rows={7}
-          maxLength={4096}
-          value={text}
-          disabled={working || !!review || !!polling}
-          onChange={(event) => {
-            clear();
-            setText(event.target.value);
-          }}
-        />
+        {reference && (
+          <section
+            className="reference-summary"
+            aria-label="Sender reference summary"
+          >
+            <div className="setup-summary-header">
+              <h3>Sender reference</h3>
+              <Button
+                variant="outline"
+                disabled={working || !!polling}
+                aria-expanded={false}
+                aria-controls="reference-input"
+                onClick={clear}
+              >
+                Change reference
+              </Button>
+            </div>
+            <dl className="reference-summary-values">
+              <dt>Seed</dt>
+              <dd>{reference.seed}</dd>
+              <dt>Expires at</dt>
+              <dd>{reference.expiresAt}</dd>
+            </dl>
+          </section>
+        )}
+        <div id="reference-input" hidden={!!reference}>
+          <label htmlFor="sender-reference">Sender reference JSON</label>
+          <Textarea
+            ref={referenceInput}
+            id="sender-reference"
+            rows={7}
+            maxLength={4096}
+            value={text}
+            disabled={working || !!review || !!polling}
+            onChange={(event) => {
+              clear();
+              setText(event.target.value);
+            }}
+          />
+        </div>
         <Button
           disabled={
             !configuration.client ||

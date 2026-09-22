@@ -14,6 +14,14 @@ Initial connection preserves the Encrypt draft, recipient and expiration, as wel
 as the entered identity label. Later wallet changes still clear private Encrypt
 state. Sender references stay in place through connection and wallet changes;
 prepared deletion authority is cleared. Recover remains usable without a wallet.
+Connected wallets use a compact account/network row; errors and required network
+switching remain visible. Validated recipients and sender references collapse into
+summaries with **Change recipient** and **Change reference** controls. Changing a
+reference discards prepared deletion authority and requires a fresh check.
+After identity restoration, Receive links stay visible and **Create another
+identity** reopens the label form. Successful uploads keep the sealed link and
+sender-reference export visible, with technical information under **View details**.
+Upload review and deletion confirmation remain fully expanded.
 
 Receiving identities are available under **Create identity** (`/identities`). Enter an exact label
 (for example `personal`) and choose **Create / restore
@@ -70,7 +78,9 @@ On **Decrypt** (`/open`), connect your wallet directly on the page, then restore
 saved receiving identity or enter its exact label under **Other identity label**.
 Saved entries show **Locked / Ready**; entries for another account require the
 matching wallet. A restored identity is selected automatically, including when
-browser storage cannot save it. Paste a sealed link or the contents of an exported
+browser storage cannot save it. Once the selected identity is ready, its setup
+panel collapses to a summary; **Change identity** reopens it. It expands again
+when the identity is locked or the wallet changes. Paste a sealed link or the contents of an exported
 envelope and click **Decrypt message**. The encrypted input stays in place through
 wallet connection, key locking and wallet changes; decrypted content is cleared.
 **Manage saved identities** opens the full backup and identity management page.

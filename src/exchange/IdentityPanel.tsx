@@ -25,50 +25,89 @@ export function IdentityPanel() {
     walletActivity,
   } = useSession();
   const [label, setLabel] = useState("personal");
-  const [copyStatus, setCopyStatus] = useState("");
+  const [editing, setEditing] = useState(false);
+  const collapsed = identities.length > 0 && !editing;
+  const createButton = useRef<HTMLButtonElement>(null);
+  const labelInput = useRef<HTMLInputElement>(null);
+  const wasCollapsed = useRef(collapsed);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (collapsed !== wasCollapsed.current) {
+      if (collapsed) createButton.current?.focus();
+      else labelInput.current?.focus();
+    }
+    wasCollapsed.current = collapsed;
+  }, [collapsed]);
   return (
     <Card>
-      <div className="card-head">
-        <h2>Create or restore an identity</h2>
+      <div className="card-head setup-summary-header">
+        <h2>
+          {collapsed ? "Your Receive links" : "Create or restore an identity"}
+        </h2>
+        {identities.length > 0 && (
+          <Button
+            ref={createButton}
+            variant="outline"
+            disabled={busy}
+            aria-expanded={!collapsed}
+            aria-controls="identity-create-form"
+            onClick={() => {
+              if (collapsed) setLabel("");
+              setEditing(!editing);
+            }}
+          >
+            {collapsed ? "Create another identity" : "Done"}
+          </Button>
+        )}
       </div>
       <div className="card-body stack">
-        <p className="small muted">
-          Restore with the same wallet account and exact label, including
-          capitalization. Labels are not passwords. Keys stay in memory until
-          locked or the wallet changes. Your wallet address, label and public
-          key are saved in this browser after restoration.
-        </p>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            setCopyStatus("");
-            void restoreIdentity(label);
-          }}
-        >
-          <label htmlFor="identity-label">Key label</label>
-          <Input
-            id="identity-label"
-            value={label}
-            maxLength={64}
-            onChange={(event) => setLabel(event.target.value)}
-            disabled={busy}
-          />
+        <div id="identity-create-form" hidden={collapsed}>
           <p className="small muted">
-            One signature approval. Use letters, numbers, spaces, dots,
-            underscores or hyphens. Start with a letter or number; no trailing
-            spaces.
+            Restore with the same wallet account and exact label, including
+            capitalization. Labels are not passwords. Keys stay in memory until
+            locked or the wallet changes. Your wallet address, label and public
+            key are saved in this browser after restoration.
           </p>
-          <Button type="submit" disabled={busy || !session}>
-            {walletActivity?.action === "restore" &&
-            walletActivity.label === label
-              ? walletActionProgress(walletActivity)
-              : "Create / restore keys"}
-          </Button>
-        </form>
-        <p className="small muted">
-          Compatibility testing is optional under Tools. Restoring the same keys
-          requires your wallet to return a reproducible signature.
-        </p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void restoreIdentity(label).then((publicKey) => {
+                if (mounted.current && publicKey) setEditing(false);
+              });
+            }}
+          >
+            <label htmlFor="identity-label">Key label</label>
+            <Input
+              ref={labelInput}
+              id="identity-label"
+              value={label}
+              maxLength={64}
+              onChange={(event) => setLabel(event.target.value)}
+              disabled={busy}
+            />
+            <p className="small muted">
+              One signature approval. Use letters, numbers, spaces, dots,
+              underscores or hyphens. Start with a letter or number; no trailing
+              spaces.
+            </p>
+            <Button type="submit" disabled={busy || !session}>
+              {walletActivity?.action === "restore" &&
+              walletActivity.label === label
+                ? walletActionProgress(walletActivity)
+                : "Create / restore keys"}
+            </Button>
+          </form>
+          <p className="small muted">
+            Compatibility testing is optional under Tools. Restoring the same
+            keys requires your wallet to return a reproducible signature.
+          </p>
+        </div>
         {identities.map((identity) => (
           <ReceiveCardDisplay
             key={`${sessionEpoch}:${identityEpoch}:${identity.publicKey}`}
@@ -76,16 +115,8 @@ export function IdentityPanel() {
           />
         ))}
         {identities.length > 0 && (
-          <Button
-            onClick={() => {
-              lockIdentities();
-              setCopyStatus("");
-            }}
-          >
-            Lock / clear keys
-          </Button>
+          <Button onClick={lockIdentities}>Lock / clear keys</Button>
         )}
-        {copyStatus && <p role="status">{copyStatus}</p>}
       </div>
     </Card>
   );
@@ -103,6 +134,17 @@ export function ReceiveCardImport({
   onChange: (card: ReceiveCard | null) => void;
 }) {
   const [text, setText] = useState(initialText);
+  const changeButton = useRef<HTMLButtonElement>(null);
+  const recipientInput = useRef<HTMLTextAreaElement>(null);
+  const validated = !!card;
+  const wasValidated = useRef(validated);
+  useEffect(() => {
+    if (validated !== wasValidated.current) {
+      if (validated) changeButton.current?.focus();
+      else recipientInput.current?.focus();
+    }
+    wasValidated.current = validated;
+  }, [validated]);
   const invalidMessage =
     "Invalid Receive link or wallet signature. Ask the recipient for a fresh link.";
   const [error, setError] = useState(
@@ -110,44 +152,61 @@ export function ReceiveCardImport({
   );
   return (
     <Card>
-      <div className="card-head">
+      <div className="card-head setup-summary-header">
         <h2>Recipient</h2>
+        {card && (
+          <Button
+            ref={changeButton}
+            variant="outline"
+            disabled={disabled}
+            aria-expanded={false}
+            aria-controls="recipient-setup"
+            onClick={() => onChange(null)}
+          >
+            Change recipient
+          </Button>
+        )}
       </div>
-      <div className="card-body stack">
-        <label htmlFor="recipient-card">Paste a Receive link</label>
-        <Textarea
-          id="recipient-card"
-          className="recipient-field"
-          disabled={disabled}
-          value={text}
-          maxLength={2048}
-          rows={2}
-          placeholder="https://…/send#zkbytes.v1.…"
-          spellCheck={false}
-          autoCapitalize="none"
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? "recipient-error" : undefined}
-          onChange={(event) => {
-            setText(event.target.value);
-            onChange(null);
-            setError("");
-          }}
-        />
-        <Button
-          disabled={disabled}
-          onClick={() => {
-            try {
-              const next = parseReceiveCard(text);
-              onChange(next);
-              setError("");
-            } catch {
-              onChange(null);
-              setError(invalidMessage);
-            }
-          }}
-        >
-          Use recipient
-        </Button>
+      <div className="card-body stack recipient-summary">
+        <div id="recipient-setup" hidden={!!card}>
+          <div className="stack">
+            <label htmlFor="recipient-card">Paste a Receive link</label>
+            <Textarea
+              ref={recipientInput}
+              id="recipient-card"
+              className="recipient-field"
+              disabled={disabled}
+              value={text}
+              maxLength={2048}
+              rows={2}
+              placeholder="https://…/send#zkbytes.v1.…"
+              spellCheck={false}
+              autoCapitalize="none"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "recipient-error" : undefined}
+              onChange={(event) => {
+                setText(event.target.value);
+                onChange(null);
+                setError("");
+              }}
+            />
+            <Button
+              disabled={disabled}
+              onClick={() => {
+                try {
+                  const next = parseReceiveCard(text);
+                  onChange(next);
+                  setError("");
+                } catch {
+                  onChange(null);
+                  setError(invalidMessage);
+                }
+              }}
+            >
+              Use recipient
+            </Button>
+          </div>
+        </div>
         {error && (
           <p id="recipient-error" role="alert">
             {error}

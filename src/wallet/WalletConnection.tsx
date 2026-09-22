@@ -18,7 +18,14 @@ export function WalletConnection({
     session?.kind === "metamask" &&
     session.chainId !== walletNetwork.chainId;
   return (
-    <section className="wallet-connection" aria-label="Wallet connection">
+    <section
+      className={
+        session
+          ? "wallet-connection wallet-connection-compact"
+          : "wallet-connection"
+      }
+      aria-label="Wallet connection"
+    >
       <div className="wallet-connection-row">
         <div className="wallet-connection-details">
           <strong>
@@ -45,7 +52,7 @@ export function WalletConnection({
               )}
             </p>
           )}
-          <p className="small muted">{description}</p>
+          {!session && <p className="small muted">{description}</p>}
         </div>
         <Button
           variant={session || optional ? "outline" : "default"}

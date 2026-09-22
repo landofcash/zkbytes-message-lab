@@ -69,19 +69,34 @@ it("preserves pasted input through connection, restores an unsaved label in plac
   await user.type(screen.getByLabelText("Other identity label"), "personal");
   await user.click(screen.getByRole("button", { name: "Restore identity" }));
   expect(
-    await screen.findByRole("button", { name: "Use personal" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    await screen.findByRole("button", { name: "Change identity" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByRole("button", { name: "Change identity" })).toHaveFocus();
+  expect(screen.getByLabelText("Other identity label")).not.toBeVisible();
+  expect(screen.getByText("Receiving identity: personal")).toBeVisible();
   expect(screen.getByRole("button", { name: "Decrypt message" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Change identity" }));
+  expect(screen.getByRole("button", { name: "Done" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   await user.clear(screen.getByLabelText("Other identity label"));
   await user.type(screen.getByLabelText("Other identity label"), "work");
   await user.click(screen.getByRole("button", { name: "Restore identity" }));
   expect(
-    await screen.findByRole("button", { name: "Use work" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    await screen.findByRole("button", { name: "Change identity" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByText("Receiving identity: work")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Change identity" }));
   expect(screen.getByRole("button", { name: "Use personal" })).toHaveAttribute(
     "aria-pressed",
     "false",
   );
+  await user.click(screen.getByRole("button", { name: "Use personal" }));
+  expect(
+    screen.getByRole("button", { name: "Change identity" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByText("Receiving identity: personal")).toBeVisible();
   expect(mocks.open).not.toHaveBeenCalled();
   expect(
     JSON.parse(localStorage.getItem(IDENTITY_STORAGE_KEY)!).identities,
@@ -115,8 +130,8 @@ it("restores saved identities only with their wallet and clears decrypted conten
   ).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Restore personal" }));
   expect(
-    await screen.findByRole("button", { name: "Use personal" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    await screen.findByRole("button", { name: "Change identity" }),
+  ).toHaveAttribute("aria-expanded", "false");
   expect(screen.getByLabelText("Sealed link or encrypted seed")).toHaveValue(
     "#sealed-value",
   );
@@ -124,17 +139,16 @@ it("restores saved identities only with their wallet and clears decrypted conten
   expect(await screen.findByLabelText("Decrypted message")).toHaveTextContent(
     "private message",
   );
-  await user.click(
-    within(screen.getByRole("region", { name: "Wallet connection" })).getByRole(
-      "button",
-      { name: "Manage wallet" },
-    ),
-  );
+  await user.click(screen.getByRole("button", { name: "Manage wallet" }));
   await user.click(screen.getByRole("button", { name: "Disconnect" }));
   await user.click(
     screen.getByRole("button", { name: "Close wallet management" }),
   );
   expect(screen.queryByLabelText("Decrypted message")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Other identity label")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Change identity" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Decrypt message" }),
   ).toBeDisabled();
@@ -161,9 +175,10 @@ it("rejects invalid exact labels inline and keeps a restored identity usable whe
   try {
     await user.click(screen.getByRole("button", { name: "Restore identity" }));
     expect(
-      await screen.findByRole("button", { name: "Use personal" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      await screen.findByRole("button", { name: "Change identity" }),
+    ).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("alert")).toHaveTextContent("could not be saved");
+    expect(screen.getByRole("alert")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Decrypt message" }),
     ).toBeEnabled();

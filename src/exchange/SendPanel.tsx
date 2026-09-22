@@ -337,7 +337,12 @@ export function SendPanel({
                   </p>
                 </>
               )}
-              {status === "active" && <MessageDetails candidate={candidate} />}
+              {status === "active" && (
+                <details className="message-details-disclosure">
+                  <summary>View details</summary>
+                  <MessageDetails candidate={candidate} />
+                </details>
+              )}
               <p className="small muted">
                 Export the sender reference before leaving this page or changing
                 wallets. It contains the storage location hidden by the sealed

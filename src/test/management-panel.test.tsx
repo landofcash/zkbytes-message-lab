@@ -69,6 +69,18 @@ it("recovery does not sign or run automatically and only offers a new message af
     await screen.findByRole("link", { name: "Prepare a new message" }),
   ).toHaveAttribute("href", "/send");
   expect(mocks.operation).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Sender reference JSON")).not.toBeVisible();
+  expect(
+    screen.getByRole("region", { name: "Sender reference summary" }),
+  ).toHaveTextContent("original-seed");
+  await user.click(screen.getByRole("button", { name: "Change reference" }));
+  expect(screen.getByLabelText("Sender reference JSON")).toBeVisible();
+  expect(screen.getByLabelText("Sender reference JSON")).toHaveValue(
+    "reference",
+  );
+  expect(
+    screen.queryByRole("link", { name: "Prepare a new message" }),
+  ).not.toBeInTheDocument();
 });
 
 it("reviews the original seed and exact manager index; Cancel never submits deletion", async () => {
@@ -79,6 +91,10 @@ it("reviews the original seed and exact manager index; Cancel never submits dele
   );
   expect(await screen.findByText("Seed: original-seed")).toBeInTheDocument();
   expect(screen.getByText("Manager index: 2")).toBeInTheDocument();
+  expect(screen.getByLabelText("Sender reference JSON")).not.toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Confirm deletion" }),
+  ).toBeVisible();
   expect(mocks.submit).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(mocks.dispose).toHaveBeenCalledTimes(1);
@@ -89,6 +105,22 @@ it("reviews the original seed and exact manager index; Cancel never submits dele
   await screen.findByText("Seed: original-seed");
   view.unmount();
   expect(mocks.dispose).toHaveBeenCalledTimes(2);
+});
+
+it("changing a reviewed reference clears deletion authority without submitting", async () => {
+  mount("delete");
+  const user = await enter();
+  await user.click(
+    screen.getByRole("button", { name: "Check deletion authority" }),
+  );
+  await screen.findByRole("button", { name: "Confirm deletion" });
+  await user.click(screen.getByRole("button", { name: "Change reference" }));
+  expect(mocks.dispose).toHaveBeenCalledOnce();
+  expect(mocks.submit).not.toHaveBeenCalled();
+  expect(
+    screen.queryByRole("button", { name: "Confirm deletion" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Sender reference JSON")).toBeVisible();
 });
 
 it("requires confirmation, blocks duplicate clicks, and shows logical deletion with pending physical removal", async () => {

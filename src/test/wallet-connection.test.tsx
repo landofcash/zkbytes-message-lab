@@ -31,6 +31,7 @@ it("switches networks only on request and shows the updated network", async () =
     <WalletConnection onManageWallet={manage} description="Connect to sign." />,
   );
   expect(state.switchNetwork).not.toHaveBeenCalled();
+  expect(screen.queryByText("Connect to sign.")).not.toBeInTheDocument();
   await user.click(
     screen.getByRole("button", { name: `Switch to ${walletNetwork.name}` }),
   );

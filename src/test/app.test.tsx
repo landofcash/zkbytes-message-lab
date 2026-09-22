@@ -55,8 +55,9 @@ describe("MVP shell", () => {
     );
     expect(await navigator.clipboard.readText()).toBe(signedCard);
     expect(
-      screen.getByRole("button", { name: "Create / restore keys" }),
+      screen.getByRole("button", { name: "Create another identity" }),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText("Key label")).not.toBeVisible();
     expect(
       screen.queryByRole("link", { name: "Receive link for personal" }),
     ).not.toBeInTheDocument();
@@ -69,6 +70,15 @@ describe("MVP shell", () => {
     );
     expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
     expect(screen.getByText(/Receiving key endorsed by/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Paste a Receive link")).not.toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Change recipient" }));
+    expect(screen.getByLabelText("Paste a Receive link")).toBeVisible();
+    expect(screen.getByLabelText("Paste a Receive link")).toHaveFocus();
+    expect(screen.queryByText(/Receive link valid/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Use recipient" }));
+    expect(
+      screen.getByRole("button", { name: "Change recipient" }),
+    ).toHaveFocus();
     await user.click(screen.getByRole("link", { name: "Create identity" }));
     expect(screen.getByLabelText("Receive link for personal")).toHaveAttribute(
       "title",
@@ -84,6 +94,25 @@ describe("MVP shell", () => {
     expect(
       await screen.findByLabelText("Receive link for personal"),
     ).toHaveAttribute("title", card);
+    await user.click(
+      screen.getByRole("button", { name: "Create another identity" }),
+    );
+    expect(screen.getByLabelText("Key label")).toBeVisible();
+    expect(screen.getByLabelText("Key label")).toHaveFocus();
+    await user.type(screen.getByLabelText("Key label"), "work ");
+    await user.click(
+      screen.getByRole("button", { name: "Create / restore keys" }),
+    );
+    expect(screen.getByRole("alert")).toBeVisible();
+    expect(screen.getByLabelText("Key label")).toBeVisible();
+    await user.clear(screen.getByLabelText("Key label"));
+    await user.type(screen.getByLabelText("Key label"), "work");
+    await user.click(
+      screen.getByRole("button", { name: "Create / restore keys" }),
+    );
+    expect(await screen.findByLabelText("Receive link for work")).toBeVisible();
+    expect(screen.getByLabelText("Key label")).not.toBeVisible();
+    expect(screen.getByLabelText("Receive link for personal")).toBeVisible();
     await user.click(
       within(
         screen.getByRole("region", { name: "Wallet connection" }),
@@ -105,6 +134,7 @@ describe("MVP shell", () => {
       `${window.location.origin}/send#${compact}`,
     );
     expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Paste a Receive link")).not.toBeVisible();
     expect(
       within(
         screen.getByRole("region", { name: "Wallet connection" }),

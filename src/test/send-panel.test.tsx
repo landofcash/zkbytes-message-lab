@@ -92,6 +92,15 @@ describe("Send UI", () => {
     expect(screen.getByLabelText("Sealed link")).toHaveTextContent(
       "https://app.example.com/open#ciphertext",
     );
+    expect(screen.getByText("original-seed")).not.toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Export sender reference" }),
+    ).toBeVisible();
+    await user.click(screen.getByText("View details"));
+    expect(screen.getByText("original-seed")).toBeVisible();
+    await user.click(screen.getByText("View details"));
+    expect(screen.getByText("original-seed")).not.toBeVisible();
+    expect(mocks.upload).toHaveBeenCalledOnce();
   });
   it("blocks resending uncertain outcomes until recovery confirms not-found", async () => {
     mocks.upload.mockResolvedValue("uncertain");
