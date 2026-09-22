@@ -4,10 +4,16 @@ The homepage at `/` introduces the app with custom animated SVG art and direct
 links to **Encrypt**, **Decrypt**, and receiving-key setup. It supports all three
 themes, mobile layouts and reduced-motion preferences.
 
-The three main areas are **Create identity**, **Encrypt** and **Decrypt**. Use **Connect wallet** in the
-top bar to open wallet management; after connection it becomes **Manage wallet**.
+The three main areas are **Create identity**, **Encrypt** and **Decrypt**. A shared
+wallet section on these pages and **Compatibility**, **Recover** and **Delete**
+shows the connected account/network and offers **Connect wallet**, **Manage wallet**
+and network switching when needed. The top bar also opens wallet management.
 The modal includes connection choices, the selected account/network, network
 switching and disconnect. It yields to the wallet provider's own connection UI.
+Initial connection preserves the Encrypt draft, recipient and expiration, as well
+as the entered identity label. Later wallet changes still clear private Encrypt
+state. Sender references stay in place through connection and wallet changes;
+prepared deletion authority is cleared. Recover remains usable without a wallet.
 
 Receiving identities are available under **Create identity** (`/identities`). Enter an exact label
 (for example `personal`) and choose **Create / restore

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { KeyRound, Wallet } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSession } from "@/wallet/session-store";
 import { walletActionProgress } from "@/wallet/WalletApprovalNotice";
+import { WalletConnection } from "@/wallet/WalletConnection";
 import { identityId } from "./saved-identities";
 import { IDENTITY_PROFILE } from "./identity";
 
@@ -22,9 +23,7 @@ export function OpenIdentitySetup({
     identities,
     savedIdentities,
     busy,
-    error,
     storageError,
-    notice,
     restoreIdentity,
     walletActivity,
   } = useSession();
@@ -85,30 +84,10 @@ export function OpenIdentitySetup({
         </h2>
       </div>
       <div className="card-body stack">
-        <section className="open-wallet" aria-label="Wallet connection">
-          <div>
-            <strong>
-              {session ? session.walletName : "Connect your wallet"}
-            </strong>
-            <p className="small muted">
-              {session ? (
-                <span title={session.address}>
-                  {session.address.slice(0, 6)}…{session.address.slice(-4)}
-                </span>
-              ) : (
-                "Connect the wallet you used to create your Receive link."
-              )}
-            </p>
-          </div>
-          <Button
-            variant={session ? "outline" : "default"}
-            onClick={onConnectWallet}
-            aria-haspopup="dialog"
-          >
-            <Wallet size={16} />
-            {session ? "Manage wallet" : "Connect wallet"}
-          </Button>
-        </section>
+        <WalletConnection
+          onManageWallet={onConnectWallet}
+          description="Connect the wallet you used to create your Receive link."
+        />
         <div>
           <h3>Choose your identity</h3>
           {!entries.length && (
@@ -205,12 +184,6 @@ export function OpenIdentitySetup({
             {restoring === label ? progress : "Restore identity"}
           </Button>
         </form>
-        {notice && (
-          <p role="status" className="small muted">
-            {notice}
-          </p>
-        )}
-        {error && <p role="alert">{error}</p>}
         {storageError && <p role="alert">{storageError}</p>}
       </div>
     </Card>

@@ -15,8 +15,29 @@ import {
 } from "./management";
 
 export function ManagementPanel({ mode }: { mode: "recover" | "delete" }) {
-  const { session, busy, runOperation } = useSession();
+  const { sessionEpoch, identityEpoch } = useSession();
   const [text, setText] = useState("");
+  return (
+    <ManagementPanelContent
+      key={mode === "delete" ? `${sessionEpoch}:${identityEpoch}` : mode}
+      mode={mode}
+      text={text}
+      setText={setText}
+    />
+  );
+}
+
+function ManagementPanelContent({
+  mode,
+  text,
+  setText,
+}: {
+  mode: "recover" | "delete";
+  text: string;
+  setText(text: string): void;
+}) {
+  const { session, busy: walletBusy, runOperation } = useSession();
+  const busy = mode === "delete" && walletBusy;
   const [reference, setReference] = useState<ZkbytesReference | null>(null);
   const [review, setReview] = useState<{
     publicKey: string;
@@ -206,7 +227,6 @@ export function ManagementPanel({ mode }: { mode: "recover" | "delete" }) {
               grant deletion authority. Checking authority requests one wallet
               signature; it does not delete the item.
             </p>
-            {!session && <p>Use Connect wallet at the top to continue.</p>}
             {!review && (
               <Button
                 disabled={

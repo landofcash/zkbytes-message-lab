@@ -20,7 +20,6 @@ export function IdentityPanel() {
     lockIdentities,
     busy,
     session,
-    error,
     sessionEpoch,
     identityEpoch,
     walletActivity,
@@ -66,16 +65,10 @@ export function IdentityPanel() {
               : "Create / restore keys"}
           </Button>
         </form>
-        {!session && (
-          <p className="small muted">
-            Use Connect wallet at the top to create or restore receiving keys.
-          </p>
-        )}
         <p className="small muted">
           Compatibility testing is optional under Tools. Restoring the same keys
           requires your wallet to return a reproducible signature.
         </p>
-        {error && <p role="alert">{error}</p>}
         {identities.map((identity) => (
           <ReceiveCardDisplay
             key={`${sessionEpoch}:${identityEpoch}:${identity.publicKey}`}

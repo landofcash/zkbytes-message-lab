@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,7 +22,11 @@ describe("MVP shell", () => {
   it("restores and exchanges a public Receive link, preserves keys across navigation, and locks them", async () => {
     const user = userEvent.setup();
     renderApp("/identities");
-    await user.click(screen.getByRole("button", { name: "Connect wallet" }));
+    await user.click(
+      within(
+        screen.getByRole("region", { name: "Wallet connection" }),
+      ).getByRole("button", { name: "Connect wallet" }),
+    );
     await user.click(screen.getByRole("button", { name: /Connect fixture/ }));
     await user.click(
       await screen.findByRole("button", { name: "Close wallet management" }),
@@ -80,7 +84,11 @@ describe("MVP shell", () => {
     expect(
       await screen.findByLabelText("Receive link for personal"),
     ).toHaveAttribute("title", card);
-    await user.click(screen.getByRole("button", { name: "Manage wallet" }));
+    await user.click(
+      within(
+        screen.getByRole("region", { name: "Wallet connection" }),
+      ).getByRole("button", { name: "Manage wallet" }),
+    );
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
     await user.click(
       screen.getByRole("button", { name: "Close wallet management" }),
@@ -98,7 +106,9 @@ describe("MVP shell", () => {
     );
     expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Connect wallet" }),
+      within(
+        screen.getByRole("region", { name: "Wallet connection" }),
+      ).getByRole("button", { name: "Connect wallet" }),
     ).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
     fetch.mockRestore();

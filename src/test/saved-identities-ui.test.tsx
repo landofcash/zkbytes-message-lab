@@ -64,7 +64,9 @@ function mount(path = "/identities") {
   );
 }
 async function connect(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Connect wallet" }));
+  await user.click(
+    screen.getAllByRole("button", { name: "Connect wallet" })[1],
+  );
   await user.click(screen.getByRole("button", { name: "Connect fixture" }));
   await user.click(
     await screen.findByRole("button", { name: "Close wallet management" }),
@@ -131,7 +133,7 @@ it("previews backup import and merges only on confirmation without connecting a 
     JSON.parse(localStorage.getItem(IDENTITY_STORAGE_KEY)!).identities,
   ).toEqual([entry]);
   expect(
-    screen.getByRole("button", { name: "Connect wallet" }),
+    screen.getAllByRole("button", { name: "Connect wallet" })[1],
   ).toBeInTheDocument();
 });
 it("rejects a restored key that differs from the backup and leaves the backup intact", async () => {

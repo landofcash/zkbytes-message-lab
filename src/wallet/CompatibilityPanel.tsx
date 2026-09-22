@@ -5,14 +5,8 @@ import { walletNetwork } from "@/config/wallet";
 import { useSession } from "./session-store";
 import { walletActionProgress } from "./WalletApprovalNotice";
 export function CompatibilityPanel() {
-  const {
-    session,
-    busy,
-    compatibility,
-    testCompatibility,
-    error,
-    walletActivity,
-  } = useSession();
+  const { session, busy, compatibility, testCompatibility, walletActivity } =
+    useSession();
   return (
     <>
       <Card>
@@ -69,10 +63,6 @@ export function CompatibilityPanel() {
           </p>
         </div>
       </Card>
-      {!session && (
-        <p>Use Connect wallet at the top to run this optional check.</p>
-      )}
-      {error && <p role="alert">{error}</p>}
     </>
   );
 }

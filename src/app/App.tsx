@@ -26,6 +26,7 @@ import { configuration } from "@/config/env";
 import { walletNetwork } from "@/config/wallet";
 import { WalletModal } from "@/wallet/WalletModal";
 import { WalletApprovalNotice } from "@/wallet/WalletApprovalNotice";
+import { WalletConnection } from "@/wallet/WalletConnection";
 import { CompatibilityPanel } from "@/wallet/CompatibilityPanel";
 import { useSession } from "@/wallet/session-store";
 import { isTheme, setTheme, themes } from "./theme";
@@ -168,11 +169,23 @@ export function App() {
           )}
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/identities" element={<IdentityPage />} />
-            <Route path="/compatibility" element={<CompatibilityPage />} />
+            <Route
+              path="/identities"
+              element={
+                <IdentityPage onConnectWallet={() => setWalletOpen(true)} />
+              }
+            />
+            <Route
+              path="/compatibility"
+              element={
+                <CompatibilityPage
+                  onConnectWallet={() => setWalletOpen(true)}
+                />
+              }
+            />
             <Route
               path="/send"
-              element={<SendPage key={session?.address ?? "disconnected"} />}
+              element={<SendPage onConnectWallet={() => setWalletOpen(true)} />}
             />
             <Route
               path="/open"
@@ -182,9 +195,24 @@ export function App() {
             />
             <Route
               path="/recover"
-              element={<ManagementPage mode="recover" />}
+              element={
+                <ManagementPage
+                  key="recover"
+                  mode="recover"
+                  onConnectWallet={() => setWalletOpen(true)}
+                />
+              }
             />
-            <Route path="/delete" element={<ManagementPage mode="delete" />} />
+            <Route
+              path="/delete"
+              element={
+                <ManagementPage
+                  key="delete"
+                  mode="delete"
+                  onConnectWallet={() => setWalletOpen(true)}
+                />
+              }
+            />
             <Route path="/diagnostics" element={<Diagnostics />} />
             <Route
               path="*"
@@ -287,8 +315,7 @@ function HowItWorks() {
     </Card>
   );
 }
-function IdentityPage() {
-  const { sessionEpoch, identityEpoch } = useSession();
+function IdentityPage({ onConnectWallet }: { onConnectWallet(): void }) {
   const location = useLocation();
   return (
     <>
@@ -298,8 +325,12 @@ function IdentityPage() {
         accent="Your receiving keys."
         description="Create an identity, share your Receive link, and keep your wallet and labels ready for next time."
       />
+      <WalletConnection
+        onManageWallet={onConnectWallet}
+        description="Connect the wallet used for your receiving identities. Creating or restoring keys requires one signature."
+      />
       <div className="columns">
-        <IdentityPanel key={`${sessionEpoch}:${identityEpoch}`} />
+        <IdentityPanel />
         <SavedIdentitiesPanel />
       </div>
       <Button asChild variant="outline">
@@ -326,7 +357,7 @@ function DecryptPage({ onConnectWallet }: { onConnectWallet(): void }) {
     </>
   );
 }
-function CompatibilityPage() {
+function CompatibilityPage({ onConnectWallet }: { onConnectWallet(): void }) {
   return (
     <>
       <Hero
@@ -335,12 +366,30 @@ function CompatibilityPage() {
         accent="Know your signer."
         description="Test reproducible signing when you need it. You can create and restore receiving keys without running this check."
       />
+      <WalletConnection
+        onManageWallet={onConnectWallet}
+        description="Connect the wallet you want to check. Start the optional check below when you are ready."
+      />
       <CompatibilityPanel />
     </>
   );
 }
-function SendPage() {
-  const { sessionEpoch } = useSession();
+function SendPage({ onConnectWallet }: { onConnectWallet(): void }) {
+  const { session, sessionEpoch } = useSession();
+  const [boundary, setBoundary] = useState({
+    epoch: sessionEpoch,
+    connected: !!session,
+    version: 0,
+  });
+  if (boundary.epoch !== sessionEpoch) {
+    // Initial connection preserves the draft. Later wallet changes still clear it.
+    const connecting = !boundary.connected && !!session;
+    setBoundary({
+      epoch: sessionEpoch,
+      connected: !!session,
+      version: boundary.version + (connecting ? 0 : 1),
+    });
+  }
   const { hash } = useLocation();
   const initialRecipientText = hash
     ? `${window.location.origin}/send${hash}`
@@ -353,9 +402,13 @@ function SendPage() {
         accent="Keep it private."
         description="Encrypt text for a recipient and share a sealed link. Only the matching receiving key can decrypt the seed."
       />
+      <WalletConnection
+        onManageWallet={onConnectWallet}
+        description="Connect your sending wallet. Encryption requests one signature; you review the result before uploading."
+      />
       <div className="columns">
         <SendPanel
-          key={`${sessionEpoch}:${hash}`}
+          key={`${boundary.version}:${hash}`}
           initialRecipientText={initialRecipientText}
         />
         <HowItWorks />
@@ -379,16 +432,27 @@ const managementPages = {
       "Delete an item using a wallet that derives one of its listed manager keys.",
   },
 };
-function ManagementPage({ mode }: { mode: "recover" | "delete" }) {
-  const { sessionEpoch, identityEpoch } = useSession();
+function ManagementPage({
+  mode,
+  onConnectWallet,
+}: {
+  mode: "recover" | "delete";
+  onConnectWallet(): void;
+}) {
   const content = managementPages[mode];
   return (
     <>
       <Hero {...content} />
-      <ManagementPanel
-        key={`${mode}:${sessionEpoch}:${identityEpoch}`}
-        mode={mode}
+      <WalletConnection
+        onManageWallet={onConnectWallet}
+        optional={mode === "recover"}
+        description={
+          mode === "recover"
+            ? "You can check upload status using your sender reference without connecting a wallet or signing."
+            : "Connect a wallet with deletion authority. You will review the item before confirming deletion."
+        }
       />
+      <ManagementPanel mode={mode} />
     </>
   );
 }

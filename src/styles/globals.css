@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-.open-wallet,
+.wallet-connection-row,
 .open-identity {
   display: flex;
   align-items: center;
@@ -8,12 +8,36 @@
   flex-wrap: wrap;
   gap: 12px;
 }
-.open-wallet {
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+.wallet-connection {
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
 }
-.open-wallet p {
+.wallet-connection p {
   margin: 6px 0 0;
+}
+.wallet-connection-details {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wallet-connection-details strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wallet-network {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.wallet-network p {
+  flex: 1 1 220px;
+}
+.card-body > .wallet-connection {
+  margin-bottom: 0;
 }
 .open-identities-list {
   display: grid;

@@ -204,11 +204,6 @@ export function SendPanel({
         </div>
         <div className="card-body stack">
           {!client && <p role="status">{configuration.message}</p>}
-          {!session && (
-            <p className="small muted">
-              Use Connect wallet at the top before encrypting your message.
-            </p>
-          )}
           {!candidate ? (
             <>
               <label htmlFor="message">Message</label>
@@ -338,8 +333,7 @@ export function SendPanel({
                   </Button>
                   <p className="small muted">
                     Share this link with the recipient. They can restore their
-                    receiving keys under Create identity, then use Decrypt to
-                    open it.
+                    receiving identity directly on Decrypt to open it.
                   </p>
                 </>
               )}
