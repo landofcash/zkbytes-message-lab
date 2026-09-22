@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { CopyableField } from "@/components/ui/copyable-field";
 import { useSession } from "@/wallet/session-store";
 import {
   createReceiveCard,
@@ -187,7 +187,6 @@ function ReceiveCardDisplay({
 }) {
   const { busy, runOperation } = useSession();
   const [signed, setSigned] = useState<ReceiveCard | null>(null);
-  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const mounted = useRef(true);
   const active = useRef(false);
@@ -205,7 +204,6 @@ function ReceiveCardDisplay({
     if (busy || active.current) return;
     active.current = true;
     setError("");
-    setStatus("");
     try {
       await runOperation(async (signer, sessionCurrent) => {
         const current = () => mounted.current && sessionCurrent();
@@ -229,36 +227,14 @@ function ReceiveCardDisplay({
           ? `Receiving key endorsed by ${signed.endorsement!.walletAddress}`
           : "Receiving key · wallet identity unverified"}
       </p>
-      <div className="text-output-group">
-        <p id={`card-${identity.label}-label`} className="output-label">
-          Receive link for {identity.label}
-        </p>
-        <Link
-          to={new URL(card).pathname + new URL(card).hash}
-          aria-labelledby={`card-${identity.label}-label`}
-          className="text-output receive-link"
-        >
-          {card}
-        </Link>
-      </div>
+      <CopyableField
+        label={`Receive link for ${identity.label}`}
+        value={card}
+      />
       <p className="small muted">
-        Share this link so someone can open Encrypt with you as the recipient.
+        Click to copy, then share this link so someone can open Encrypt with you
+        as the recipient.
       </p>
-      <Button
-        onClick={() => {
-          void navigator.clipboard.writeText(card).then(
-            () => {
-              if (mounted.current) setStatus("Receive link copied.");
-            },
-            () => {
-              if (mounted.current)
-                setStatus("Copy unavailable. Select and copy the link above.");
-            },
-          );
-        }}
-      >
-        Copy Receive link
-      </Button>
       {signed ? (
         <>
           <p className="small muted">
@@ -270,7 +246,6 @@ function ReceiveCardDisplay({
             disabled={busy}
             onClick={() => {
               setSigned(null);
-              setStatus("");
             }}
           >
             Use unsigned link
@@ -287,7 +262,6 @@ function ReceiveCardDisplay({
           </Button>
         </>
       )}
-      {status && <p role="status">{status}</p>}
       {error && <p role="alert">{error}</p>}
     </section>
   );

@@ -77,11 +77,54 @@ input[type="file"] {
   border: 0;
   border-left: 3px solid var(--primary);
 }
-.receive-link {
-  display: block;
+.copyable-field-group {
+  min-width: 0;
+}
+.copyable-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  text-align: left;
+  font:
+    12px/1.8 "JetBrains Mono",
+    monospace;
+  cursor: pointer;
+}
+.copyable-field:hover,
+.copyable-field:focus-visible {
+  background: var(--secondary);
+  border-color: var(--primary);
+}
+.copyable-field svg {
+  flex-shrink: 0;
+}
+.copyable-field-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copyable-field-mobile {
+  display: none;
+}
+.copyable-field-fallback {
+  margin-top: 12px;
+}
+@media (max-width: 650px) {
+  .copyable-field-mobile {
+    display: inline;
+  }
+  .copyable-field-desktop {
+    display: none;
+  }
 }
 .message-details {
   border: 1px solid var(--border);

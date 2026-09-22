@@ -33,7 +33,7 @@ describe("MVP shell", () => {
     await user.click(restore);
     const card = (
       (await screen.findByLabelText("Receive link for personal")) as HTMLElement
-    ).textContent!;
+    ).title;
     expect(card).not.toContain("privateKey");
     expect(new URL(card).pathname).toBe("/send");
     expect(new URL(card).hash).toMatch(/^#zkbytes\.v1\.[A-Za-z0-9_-]{43}$/);
@@ -44,20 +44,32 @@ describe("MVP shell", () => {
     await screen.findByRole("button", { name: "Use unsigned link" });
     const signedCard = (
       screen.getByLabelText("Receive link for personal") as HTMLElement
-    ).textContent!;
+    ).title;
     expect(new URL(signedCard).hash.split(".")).toHaveLength(5);
     await user.click(
-      screen.getByRole("link", { name: "Receive link for personal" }),
+      screen.getByRole("button", { name: "Receive link for personal" }),
     );
+    expect(await navigator.clipboard.readText()).toBe(signedCard);
+    expect(
+      screen.getByRole("button", { name: "Create / restore keys" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Receive link for personal" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Encrypt" }));
+    await user.click(screen.getByLabelText("Paste a Receive link"));
+    await user.paste(signedCard);
+    await user.click(screen.getByRole("button", { name: "Use recipient" }));
     expect(screen.getByLabelText("Paste a Receive link")).toHaveValue(
       signedCard,
     );
     expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
     expect(screen.getByText(/Receiving key endorsed by/)).toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Create identity" }));
-    expect(
-      screen.getByLabelText("Receive link for personal"),
-    ).toHaveTextContent(card);
+    expect(screen.getByLabelText("Receive link for personal")).toHaveAttribute(
+      "title",
+      card,
+    );
     await user.click(screen.getByRole("button", { name: "Lock / clear keys" }));
     expect(
       screen.queryByLabelText("Receive link for personal"),
@@ -67,7 +79,7 @@ describe("MVP shell", () => {
     );
     expect(
       await screen.findByLabelText("Receive link for personal"),
-    ).toHaveTextContent(card);
+    ).toHaveAttribute("title", card);
     await user.click(screen.getByRole("button", { name: "Manage wallet" }));
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
     await user.click(

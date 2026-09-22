@@ -55,8 +55,10 @@ On **Encrypt**, open a recipient's Receive link, or paste it and choose **Use re
 to validate it and review the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
 Review the prepared seed, creator and destination origins before **Confirm upload**.
 An active upload shows a selectable sealed link with a copy action and grouped
-message details. Receive links are clickable, selectable text; decrypted messages
-also use text displays, not read-only input fields.
+message details. On Create identity, Receive links use a shortened copyable field:
+clicking copies the full URL and briefly shows “Copied!” without navigating away.
+Hover to see the full value. The field follows the selected zkbytes theme.
+Decrypted messages use text displays, not read-only input fields.
 
 On **Create identity**, restore the matching receiving identity. Then on **Decrypt**, paste a sealed link or
 the contents of an exported envelope, select the identity and click **Decrypt
