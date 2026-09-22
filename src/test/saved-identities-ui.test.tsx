@@ -37,7 +37,7 @@ it("keeps keys usable when browser persistence fails and reports that they were 
       screen.getByRole("button", { name: "Create / restore keys" }),
     );
     expect(
-      await screen.findByLabelText("Receive card for personal"),
+      await screen.findByLabelText("Receive link for personal"),
     ).toBeInTheDocument();
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "could not be saved",
@@ -77,14 +77,14 @@ it("remembers metadata across reload, requires wallet restoration, and clears on
   await user.click(
     screen.getByRole("button", { name: "Create / restore keys" }),
   );
-  const card = (await screen.findByLabelText("Receive card for personal"))
+  const card = (await screen.findByLabelText("Receive link for personal"))
     .textContent;
   const saved = localStorage.getItem(IDENTITY_STORAGE_KEY)!;
   expect(JSON.parse(saved).identities).toEqual([entry]);
   view.unmount();
   mount();
   expect(
-    screen.queryByLabelText("Receive card for personal"),
+    screen.queryByLabelText("Receive link for personal"),
   ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: `Restore personal for ${address}` }),
@@ -94,7 +94,7 @@ it("remembers metadata across reload, requires wallet restoration, and clears on
     screen.getByRole("button", { name: `Restore personal for ${address}` }),
   );
   expect(
-    await screen.findByLabelText("Receive card for personal"),
+    await screen.findByLabelText("Receive link for personal"),
   ).toHaveTextContent(card!);
   localStorage.setItem("unrelated", "keep");
   await user.click(
@@ -111,7 +111,7 @@ it("remembers metadata across reload, requires wallet restoration, and clears on
   expect(localStorage.getItem(IDENTITY_STORAGE_KEY)).toBeNull();
   expect(localStorage.getItem("unrelated")).toBe("keep");
   expect(
-    screen.queryByLabelText("Receive card for personal"),
+    screen.queryByLabelText("Receive link for personal"),
   ).not.toBeInTheDocument();
 });
 it("previews backup import and merges only on confirmation without connecting a wallet", async () => {
@@ -149,7 +149,7 @@ it("rejects a restored key that differs from the backup and leaves the backup in
     "differs from the saved key",
   );
   expect(
-    screen.queryByLabelText("Receive card for personal"),
+    screen.queryByLabelText("Receive link for personal"),
   ).not.toBeInTheDocument();
   expect(localStorage.getItem(IDENTITY_STORAGE_KEY)).toBe(backup);
 });
@@ -164,7 +164,7 @@ it("keeps an incoming sealed link through identity setup and clears unlocked key
   await user.click(
     screen.getByRole("button", { name: "Create / restore keys" }),
   );
-  await screen.findByLabelText("Receive card for personal");
+  await screen.findByLabelText("Receive link for personal");
   act(() => {
     localStorage.removeItem(IDENTITY_STORAGE_KEY);
     window.dispatchEvent(
@@ -173,7 +173,7 @@ it("keeps an incoming sealed link through identity setup and clears unlocked key
   });
   await waitFor(() =>
     expect(
-      screen.queryByLabelText("Receive card for personal"),
+      screen.queryByLabelText("Receive link for personal"),
     ).not.toBeInTheDocument(),
   );
   await user.click(screen.getByRole("link", { name: "Continue to Decrypt" }));

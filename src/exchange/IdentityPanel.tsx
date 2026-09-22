@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { TextOutput } from "@/components/ui/text-output";
 import { useSession } from "@/wallet/session-store";
 import {
   createReceiveCard,
   parseReceiveCard,
-  serializeReceiveCard,
+  receiveLink,
   signReceiveCard,
   type ReceiveCard,
 } from "./receive-card";
@@ -95,32 +95,43 @@ export function IdentityPanel() {
 
 export function ReceiveCardImport({
   disabled = false,
+  initialText = "",
+  card,
   onChange,
 }: {
   disabled?: boolean;
-  onChange?: (card: ReceiveCard | null) => void;
+  initialText?: string;
+  card: ReceiveCard | null;
+  onChange: (card: ReceiveCard | null) => void;
 }) {
-  const [text, setText] = useState("");
-  const [card, setCard] = useState<ReceiveCard | null>(null);
-  const [error, setError] = useState("");
+  const [text, setText] = useState(initialText);
+  const invalidMessage =
+    "Invalid Receive link or wallet signature. Ask the recipient for a fresh link.";
+  const [error, setError] = useState(
+    initialText && !card ? invalidMessage : "",
+  );
   return (
     <Card>
       <div className="card-head">
-        <h2>Recipient Receive card</h2>
+        <h2>Recipient</h2>
       </div>
       <div className="card-body stack">
-        <label htmlFor="recipient-card">Paste a Receive card</label>
+        <label htmlFor="recipient-card">Paste a Receive link</label>
         <Textarea
           id="recipient-card"
+          className="recipient-field"
           disabled={disabled}
           value={text}
           maxLength={2048}
-          rows={4}
-          placeholder="zkbytes.v1.…"
+          rows={2}
+          placeholder="https://…/send#zkbytes.v1.…"
+          spellCheck={false}
+          autoCapitalize="none"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "recipient-error" : undefined}
           onChange={(event) => {
             setText(event.target.value);
-            setCard(null);
-            onChange?.(null);
+            onChange(null);
             setError("");
           }}
         />
@@ -129,25 +140,25 @@ export function ReceiveCardImport({
           onClick={() => {
             try {
               const next = parseReceiveCard(text);
-              setCard(next);
-              onChange?.(next);
+              onChange(next);
               setError("");
             } catch {
-              setCard(null);
-              onChange?.(null);
-              setError(
-                "Invalid Receive card or wallet signature. Ask the recipient for a fresh export.",
-              );
+              onChange(null);
+              setError(invalidMessage);
             }
           }}
         >
-          Import Receive card
+          Use recipient
         </Button>
-        {error && <p role="alert">{error}</p>}
+        {error && (
+          <p id="recipient-error" role="alert">
+            {error}
+          </p>
+        )}
         {card && (
           <>
             <p role="status">
-              Receive card valid. Confirm this public key with your recipient.
+              Receive link valid. Confirm this public key with your recipient.
             </p>
             <code style={{ overflowWrap: "anywhere" }}>{card.publicKey}</code>
             <p className="small muted">
@@ -186,7 +197,8 @@ function ReceiveCardDisplay({
       mounted.current = false;
     };
   }, []);
-  const card = serializeReceiveCard(
+  const card = receiveLink(
+    window.location.origin,
     signed ?? createReceiveCard(identity.publicKey),
   );
   async function sign() {
@@ -203,7 +215,7 @@ function ReceiveCardDisplay({
     } catch {
       if (mounted.current)
         setError(
-          "Card signing failed or was rejected. Your unsigned card remains available.",
+          "Link signing failed or was rejected. Your unsigned link remains available.",
         );
     } finally {
       active.current = false;
@@ -217,41 +229,35 @@ function ReceiveCardDisplay({
           ? `Receiving key endorsed by ${signed.endorsement!.walletAddress}`
           : "Receiving key · wallet identity unverified"}
       </p>
-      <TextOutput
-        id={`card-${identity.label}`}
-        label={`Receive card for ${identity.label}`}
-      >
-        {card}
-      </TextOutput>
+      <div className="text-output-group">
+        <p id={`card-${identity.label}-label`} className="output-label">
+          Receive link for {identity.label}
+        </p>
+        <Link
+          to={new URL(card).pathname + new URL(card).hash}
+          aria-labelledby={`card-${identity.label}-label`}
+          className="text-output receive-link"
+        >
+          {card}
+        </Link>
+      </div>
+      <p className="small muted">
+        Share this link so someone can open Encrypt with you as the recipient.
+      </p>
       <Button
         onClick={() => {
           void navigator.clipboard.writeText(card).then(
             () => {
-              if (mounted.current) setStatus("Receive card copied.");
+              if (mounted.current) setStatus("Receive link copied.");
             },
             () => {
               if (mounted.current)
-                setStatus("Copy unavailable. Select and copy the card above.");
+                setStatus("Copy unavailable. Select and copy the link above.");
             },
           );
         }}
       >
-        Copy Receive card
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => {
-          const url = URL.createObjectURL(
-            new Blob([card], { type: "text/plain" }),
-          );
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = "receive-card.txt";
-          link.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }}
-      >
-        Export Receive card
+        Copy Receive link
       </Button>
       {signed ? (
         <>
@@ -267,17 +273,17 @@ function ReceiveCardDisplay({
               setStatus("");
             }}
           >
-            Use unsigned card
+            Use unsigned link
           </Button>
         </>
       ) : (
         <>
           <p className="small muted">
             Optional: endorse this key with your wallet. One additional
-            signature; your wallet address will be included in the shared card.
+            signature; your wallet address will be included in the shared link.
           </p>
           <Button variant="outline" disabled={busy} onClick={() => void sign()}>
-            Sign Receive card
+            Sign Receive link
           </Button>
         </>
       )}

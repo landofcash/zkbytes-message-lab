@@ -52,9 +52,9 @@ const candidate = {
 };
 async function fill() {
   const user = userEvent.setup();
-  await user.click(screen.getByLabelText("Paste a Receive card"));
+  await user.click(screen.getByLabelText("Paste a Receive link"));
   await user.paste(card);
-  await user.click(screen.getByRole("button", { name: "Import Receive card" }));
+  await user.click(screen.getByRole("button", { name: "Use recipient" }));
   await user.type(screen.getByLabelText("Message"), "Secret draft");
   return user;
 }

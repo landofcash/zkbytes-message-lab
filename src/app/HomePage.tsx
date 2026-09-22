@@ -220,7 +220,7 @@ export function HomePage() {
         <div>
           <p className="landing-kicker">ON THE OTHER SIDE?</p>
           <h2>EXPECTING A MESSAGE?</h2>
-          <p>Create your Receive card.</p>
+          <p>Create your Receive link.</p>
         </div>
         <Link className="landing-receive-link" to="/identities">
           Get receiving keys <ArrowUpRight size={28} />

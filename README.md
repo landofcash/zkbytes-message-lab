@@ -11,9 +11,12 @@ switching and disconnect. It yields to the wallet provider's own connection UI.
 
 Receiving identities are available under **Create identity** (`/identities`). Enter an exact label
 (for example `personal`) and choose **Create / restore
-keys**. Approve one signature, then copy or export the compact public Receive card:
-`zkbytes.v1.<publicKey>`. Export saves `receive-card.txt`; only compact cards are
-accepted. The
+keys**. Approve one signature, then copy your public **Receive link**:
+`https://<app-origin>/send#zkbytes.v1.<publicKey>`. Opening it takes the sender to
+Encrypt with your recipient details already filled in and validated. The link
+contains public receiving details; opening it never connects a wallet, signs or
+uploads automatically. Existing compact `zkbytes.v1.<publicKey>` values are also
+accepted in the recipient field. The
 same wallet account and exact label restore the same key after reload. Labels are
 case-sensitive and are not passwords. Private keys remain in memory and are cleared
 by **Lock / clear keys**, wallet changes, disconnect or leaving the app.
@@ -40,20 +43,20 @@ the theme preference. Other open tabs invalidate their keys when the list change
 Storage errors are shown explicitly; keys may still be used in the current session
 if saving fails. Browser profiles/origins keep separate lists.
 
-**Sign Receive card** optionally adds a wallet endorsement through a separate
+**Sign Receive link** optionally adds a wallet endorsement through a separate
 approval: `zkbytes.v1.<publicKey>.<walletAddress>.<signature>`. The key and public
 endorsement signature use unpadded Base64URL; v1 defines X25519. Signing makes the
 wallet address public. Imports verify the signature and show the endorsing wallet,
-or reject invalid cards. This proves wallet endorsement, not private-key possession,
-a person's identity or the sender of subsequent messages. **Use unsigned card**
+or reject invalid links. This proves wallet endorsement, not private-key possession,
+a person's identity or the sender of subsequent messages. **Use unsigned link**
 returns to the shorter form. Secret key-derivation signatures are never exported.
 
-On **Encrypt**, paste and import a recipient's Receive card to validate it and review
-the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
+On **Encrypt**, open a recipient's Receive link, or paste it and choose **Use recipient**
+to validate it and review the public key. Enter a message and expiration, then **Confirm & sign to encrypt**.
 Review the prepared seed, creator and destination origins before **Confirm upload**.
 An active upload shows a selectable sealed link with a copy action and grouped
-message details. Receive cards and decrypted messages also use text displays,
-not read-only input fields.
+message details. Receive links are clickable, selectable text; decrypted messages
+also use text displays, not read-only input fields.
 
 On **Create identity**, restore the matching receiving identity. Then on **Decrypt**, paste a sealed link or
 the contents of an exported envelope, select the identity and click **Decrypt
@@ -211,12 +214,12 @@ not yet a committed, repeatable browser-test suite; no CI workflow exists in thi
 Reported success is partial acceptance, not a complete supported-wallet matrix.
 Exact browser/wallet versions still need to be recorded.
 
-| Integration | Recorded evidence | Still to verify |
-|---|---|---|
-| MetaMask Connect, desktop extension | Compatibility, account switching and disconnect reported working | Fresh-session exchange, recovery and deletion; record versions |
-| MetaMask Connect, mobile | Not recorded | Full connection/signing/exchange/deletion flow |
-| WalletConnect | Connection reported working; wallet not recorded | Identify wallet; rejection, remote disconnect and full exchange/deletion |
-| WalletConnect, MetaMask Mobile | Not separately recorded | Full flow |
+| Integration                         | Recorded evidence                                                | Still to verify                                                          |
+| ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| MetaMask Connect, desktop extension | Compatibility, account switching and disconnect reported working | Fresh-session exchange, recovery and deletion; record versions           |
+| MetaMask Connect, mobile            | Not recorded                                                     | Full connection/signing/exchange/deletion flow                           |
+| WalletConnect                       | Connection reported working; wallet not recorded                 | Identify wallet; rejection, remote disconnect and full exchange/deletion |
+| WalletConnect, MetaMask Mobile      | Not separately recorded                                          | Full flow                                                                |
 
 The user also reported receiving-identity testing and successful storage uploads.
 New recovery/deletion flows have automated coverage; their live acceptance and

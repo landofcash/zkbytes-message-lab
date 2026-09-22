@@ -5,6 +5,7 @@ import {
   createReceiveCard,
   parseReceiveCard,
   receiveCardMessage,
+  receiveLink,
   serializeReceiveCard,
   signReceiveCard,
 } from "@/exchange/receive-card";
@@ -12,6 +13,28 @@ import { prepareMessage } from "@/exchange/send";
 import { ZkbytesClient } from "@zkbytes/sdk";
 const key = "E/frDPU+6KR8X6eFQ95jCOwDiIH1CCwoRmNqz+IxoyI=";
 const wallet = new Wallet("0x" + "0".repeat(63) + "1");
+
+it("round-trips unsigned and endorsed Receive links and rejects malformed links", async () => {
+  for (const card of [
+    createReceiveCard(key),
+    await signReceiveCard(key, wallet, () => true),
+  ]) {
+    const link = receiveLink("https://lab.example", card);
+    expect(link).toBe(`https://lab.example/send#${serializeReceiveCard(card)}`);
+    expect(parseReceiveCard(link)).toEqual(card);
+    expect(parseReceiveCard(`  ${link}  `)).toEqual(card);
+    for (const invalid of [
+      link.replace("/send#", "/open#"),
+      link.replace("https:", "javascript:"),
+      link.replace("/send#", "/send?recipient=ignored#"),
+      link.replace("lab.example", "user@lab.example"),
+      link + ".extra",
+      "https://lab.example/send#",
+      "x".repeat(2049),
+    ])
+      expect(() => parseReceiveCard(invalid)).toThrow();
+  }
+});
 
 it("pins compact encoding and the exact purpose-bound signing message, rejecting JSON imports", () => {
   const card = createReceiveCard(key);

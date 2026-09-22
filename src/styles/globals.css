@@ -77,6 +77,12 @@ input[type="file"] {
   border: 0;
   border-left: 3px solid var(--primary);
 }
+.receive-link {
+  display: block;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
 .message-details {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -164,9 +170,31 @@ input[type="file"] {
 }
 .landing-nav {
   display: flex;
-  gap: 28px;
+  gap: 8px;
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
   margin-right: auto;
   font-weight: 600;
+}
+.landing-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+.landing-nav a svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.landing-nav a:hover,
+.landing-nav a:focus-visible {
+  background: var(--secondary);
+  border-color: var(--border);
 }
 .landing-nav a:hover,
 .landing-footer a:hover {
@@ -368,6 +396,13 @@ input[type="file"] {
   .landing-shell .topbar-controls {
     margin-left: auto;
   }
+  .landing-nav {
+    order: 3;
+    width: 100%;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
   .landing-hero {
     min-height: auto;
     padding: 45px 0;
@@ -387,9 +422,14 @@ input[type="file"] {
     font-size: 22px;
   }
   .landing-nav {
-    margin-left: auto;
-    margin-right: 0;
-    gap: 22px;
+    margin: 0;
+    gap: 4px;
+  }
+  .landing-nav a {
+    flex: 1;
+    gap: 5px;
+    padding: 10px 5px;
+    font-size: 11px;
   }
   .landing-shell .topbar-controls {
     width: 100%;
@@ -1164,6 +1204,13 @@ textarea.field {
   min-height: 210px;
   resize: vertical;
 }
+textarea.recipient-field {
+  min-height: 80px;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.8 "JetBrains Mono",
+    monospace;
+}
 .field::placeholder {
   color: var(--muted-foreground);
   opacity: 0.8;
@@ -1313,6 +1360,9 @@ textarea.field {
 @media (max-width: 650px) {
   .shell {
     display: block;
+  }
+  .topbar-controls {
+    flex-wrap: wrap;
   }
   .sidebar {
     padding: 16px 18px 10px;

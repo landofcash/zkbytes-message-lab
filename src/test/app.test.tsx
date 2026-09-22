@@ -19,7 +19,7 @@ function renderApp(path = "/") {
   );
 }
 describe("MVP shell", () => {
-  it("restores and exchanges a public Receive card, preserves keys across navigation, and locks them", async () => {
+  it("restores and exchanges a public Receive link, preserves keys across navigation, and locks them", async () => {
     const user = userEvent.setup();
     renderApp("/identities");
     await user.click(screen.getByRole("button", { name: "Connect wallet" }));
@@ -32,37 +32,41 @@ describe("MVP shell", () => {
     });
     await user.click(restore);
     const card = (
-      (await screen.findByLabelText("Receive card for personal")) as HTMLElement
+      (await screen.findByLabelText("Receive link for personal")) as HTMLElement
     ).textContent!;
     expect(card).not.toContain("privateKey");
-    expect(card).toMatch(/^zkbytes\.v1\.[A-Za-z0-9_-]{43}$/);
-    await user.click(screen.getByRole("button", { name: "Sign Receive card" }));
-    await screen.findByRole("button", { name: "Use unsigned card" });
+    expect(new URL(card).pathname).toBe("/send");
+    expect(new URL(card).hash).toMatch(/^#zkbytes\.v1\.[A-Za-z0-9_-]{43}$/);
+    expect(
+      screen.queryByRole("button", { name: /Export Receive/ }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Sign Receive link" }));
+    await screen.findByRole("button", { name: "Use unsigned link" });
     const signedCard = (
-      screen.getByLabelText("Receive card for personal") as HTMLElement
+      screen.getByLabelText("Receive link for personal") as HTMLElement
     ).textContent!;
-    expect(signedCard.split(".")).toHaveLength(5);
-    await user.click(screen.getByRole("link", { name: "Encrypt" }));
-    await user.click(screen.getByLabelText("Paste a Receive card"));
-    await user.paste(signedCard);
+    expect(new URL(signedCard).hash.split(".")).toHaveLength(5);
     await user.click(
-      screen.getByRole("button", { name: "Import Receive card" }),
+      screen.getByRole("link", { name: "Receive link for personal" }),
     );
-    expect(screen.getByText(/Receive card valid/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Paste a Receive link")).toHaveValue(
+      signedCard,
+    );
+    expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
     expect(screen.getByText(/Receiving key endorsed by/)).toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: "Create identity" }));
     expect(
-      screen.getByLabelText("Receive card for personal"),
+      screen.getByLabelText("Receive link for personal"),
     ).toHaveTextContent(card);
     await user.click(screen.getByRole("button", { name: "Lock / clear keys" }));
     expect(
-      screen.queryByLabelText("Receive card for personal"),
+      screen.queryByLabelText("Receive link for personal"),
     ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Create / restore keys" }),
     );
     expect(
-      await screen.findByLabelText("Receive card for personal"),
+      await screen.findByLabelText("Receive link for personal"),
     ).toHaveTextContent(card);
     await user.click(screen.getByRole("button", { name: "Manage wallet" }));
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
@@ -70,8 +74,36 @@ describe("MVP shell", () => {
       screen.getByRole("button", { name: "Close wallet management" }),
     );
     expect(
-      screen.queryByLabelText("Receive card for personal"),
+      screen.queryByLabelText("Receive link for personal"),
     ).not.toBeInTheDocument();
+  });
+  it("prefills and validates a shared recipient before connecting a wallet, without network requests", async () => {
+    const fetch = vi.spyOn(globalThis, "fetch");
+    const compact = "zkbytes.v1.E_frDPU-6KR8X6eFQ95jCOwDiIH1CCwoRmNqz-IxoyI";
+    renderApp(`/send#${compact}`);
+    expect(screen.getByLabelText("Paste a Receive link")).toHaveValue(
+      `${window.location.origin}/send#${compact}`,
+    );
+    expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Connect wallet" }),
+    ).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+    fetch.mockRestore();
+  });
+  it("shows an invalid shared recipient and lets the sender replace it", async () => {
+    const user = userEvent.setup();
+    renderApp("/send#zkbytes.v1.invalid");
+    expect(screen.getByRole("alert")).toHaveTextContent("Invalid Receive link");
+    expect(screen.queryByText(/Receive link valid/)).not.toBeInTheDocument();
+    const field = screen.getByLabelText("Paste a Receive link");
+    await user.clear(field);
+    await user.paste(
+      `${window.location.origin}/send#zkbytes.v1.E_frDPU-6KR8X6eFQ95jCOwDiIH1CCwoRmNqz-IxoyI`,
+    );
+    await user.click(screen.getByRole("button", { name: "Use recipient" }));
+    expect(screen.getByText(/Receive link valid/)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
   it("preserves a draft through all themes without making network requests", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");

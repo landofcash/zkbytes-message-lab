@@ -9,7 +9,11 @@ import { configuration } from "@/config/env";
 import { useSession } from "@/wallet/session-store";
 import { walletErrorKind, walletErrorMessages } from "@/wallet/errors";
 import { ReceiveCardImport } from "./IdentityPanel";
-import { serializeReceiveCard, type ReceiveCard } from "./receive-card";
+import {
+  parseReceiveCard,
+  serializeReceiveCard,
+  type ReceiveCard,
+} from "./receive-card";
 import { sealedSeedLink } from "./sealed-seed";
 import {
   MAX_MESSAGE_BYTES,
@@ -46,11 +50,21 @@ const messages: Record<UploadState, string> = {
   deleted: "This item was deleted. A sealed link is unavailable.",
   expired: "This item has expired. A sealed link is unavailable.",
 };
-export function SendPanel() {
+export function SendPanel({
+  initialRecipientText = "",
+}: {
+  initialRecipientText?: string;
+}) {
   const { session, busy, runOperation } = useSession();
   const client = configuration.client;
   const [message, setMessage] = useState("");
-  const [recipient, setRecipient] = useState<ReceiveCard | null>(null);
+  const [recipient, setRecipient] = useState<ReceiveCard | null>(() => {
+    try {
+      return parseReceiveCard(initialRecipientText);
+    } catch {
+      return null;
+    }
+  });
   const [hours, setHours] = useState("24");
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [status, setStatus] = useState<UploadState>("ready");
@@ -168,6 +182,8 @@ export function SendPanel() {
       {!candidate && (
         <ReceiveCardImport
           key={formVersion}
+          initialText={formVersion === 0 ? initialRecipientText : ""}
+          card={recipient}
           disabled={disabled}
           onChange={setRecipient}
         />
@@ -316,7 +332,8 @@ export function SendPanel() {
                   </Button>
                   <p className="small muted">
                     Share this link with the recipient. They can restore their
-                    receiving keys under Create identity, then use Decrypt to open it.
+                    receiving keys under Create identity, then use Decrypt to
+                    open it.
                   </p>
                 </>
               )}

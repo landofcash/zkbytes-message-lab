@@ -111,9 +111,12 @@ export function App() {
                 zkbytes<span className="brand-dot">.</span>
               </Link>
               <nav className="landing-nav" aria-label="Main navigation">
-                <Link to="/identities">Create identity</Link>
-                <Link to="/send">Encrypt</Link>
-                <Link to="/open">Decrypt</Link>
+                {primary.map(({ to, label, icon: Icon }) => (
+                  <Link key={to} to={to}>
+                    <Icon size={17} aria-hidden="true" />
+                    <span>{label}</span>
+                  </Link>
+                ))}
               </nav>
             </>
           ) : (
@@ -257,7 +260,7 @@ function HowItWorks() {
           </li>
           <li>
             <div>
-              <strong>Share a Receive card</strong>
+              <strong>Share a Receive link</strong>
               <p>
                 Give your public key to someone who wants to send you a message.
               </p>
@@ -286,7 +289,7 @@ function IdentityPage() {
         eyebrow="01 / CREATE IDENTITY"
         title="Your wallet."
         accent="Your receiving keys."
-        description="Create an identity, share your Receive card, and keep your wallet and labels ready for next time."
+        description="Create an identity, share your Receive link, and keep your wallet and labels ready for next time."
       />
       <div className="columns">
         <IdentityPanel key={`${sessionEpoch}:${identityEpoch}`} />
@@ -332,6 +335,10 @@ function CompatibilityPage() {
 }
 function SendPage() {
   const { sessionEpoch } = useSession();
+  const { hash } = useLocation();
+  const initialRecipientText = hash
+    ? `${window.location.origin}/send${hash}`
+    : "";
   return (
     <>
       <Hero
@@ -341,7 +348,10 @@ function SendPage() {
         description="Encrypt text for a recipient and share a sealed link. Only the matching receiving key can decrypt the seed."
       />
       <div className="columns">
-        <SendPanel key={sessionEpoch} />
+        <SendPanel
+          key={`${sessionEpoch}:${hash}`}
+          initialRecipientText={initialRecipientText}
+        />
         <HowItWorks />
       </div>
     </>

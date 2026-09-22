@@ -65,6 +65,9 @@ export function serializeReceiveCard(card: ReceiveCard): string {
     ? `${prefix}.${card.endorsement.walletAddress.toLowerCase()}.${card.endorsement.signature}`
     : prefix;
 }
+export function receiveLink(origin: string, card: ReceiveCard): string {
+  return new URL(`/send#${serializeReceiveCard(card)}`, origin).href;
+}
 export async function signReceiveCard(
   publicKey: string,
   signer: MasterMessageSigner,
@@ -105,12 +108,18 @@ export function createReceiveCard(publicKey: string): ReceiveCard {
 }
 export function parseReceiveCard(text: string): ReceiveCard {
   if (new TextEncoder().encode(text).length > 2048)
-    throw new Error("Receive card is too large.");
+    throw new Error("Receive link is too large.");
   text = text.trim();
+  if (/^https?:\/\//i.test(text)) {
+    const url = new URL(text);
+    if (url.pathname !== "/send" || url.search || url.username || url.password)
+      throw new Error("Invalid Receive link.");
+    text = url.hash.slice(1);
+  }
   if (text.startsWith("zkbytes.")) {
     const parts = text.split(".");
     if ((parts.length !== 3 && parts.length !== 5) || parts[1] !== "v1")
-      throw new Error("Unsupported Receive card.");
+      throw new Error("Unsupported Receive link.");
     const card = createReceiveCard(encodeBase64(decodeUrl(parts[2], 32)));
     if (parts.length === 5) {
       card.endorsement = {
@@ -121,5 +130,7 @@ export function parseReceiveCard(text: string): ReceiveCard {
     }
     return card;
   }
-  throw new Error("Unsupported Receive card. Use zkbytes.v1 compact text.");
+  throw new Error(
+    "Unsupported Receive link. Paste a Receive link or zkbytes.v1 compact text.",
+  );
 }
